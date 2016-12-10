@@ -11,19 +11,24 @@ public class Level {
     public void Init(LevelData data, LevelPalette palette)
     {
         m_data = data;
-        m_palette = palette;    
+        m_palette = palette;
+        m_levelCells = new LevelCell[m_data.m_cellDatas.Length];
     }
 
-    public void GenerateCells()
+    public void GenerateMissingCells()
     {
-        m_levelCells = new LevelCell[m_data.m_cellDatas.Length];
-
         for (int z = 0; z < m_data.m_depth; ++z)
         {
             for (int y = 0; y < m_data.m_height; ++y)
             {
                 for (int x = 0; x < m_data.m_width; ++x)
                 {
+                    LevelCell existingCell = GetCell(x, y, z);
+                    if(existingCell != null)
+                    {
+                        continue;
+                    }
+
                     LevelData.LevelCellData cellData = m_data.GetCellData(x, y, z);
                     if(cellData.m_type == LevelCell.CellType.Empty)
                     {
@@ -34,6 +39,8 @@ public class Level {
                     GameObject cellObj = GameObject.Instantiate(prefab, GetCellPosition(x, y, z), GetRotation(cellData.m_rotationId),LevelManager.Instance.transform);
                     LevelCell cell = cellObj.GetComponent<LevelCell>();
                     cell.Init(x, y, z);
+                    cell.Show(LevelCell.kTransitionTime * 0.5f * y);
+                    SetCell(x, y, z, cell);
                 }
             }
         }
@@ -75,6 +82,18 @@ public class Level {
             if(cell != null)
             {
                 GameObject.Destroy(cell.gameObject);
+            }
+        }
+    }
+
+    public void MapCells(LevelCell[] cells)
+    {
+        for(int i = 0, n = cells.Length; i < n; ++i)
+        {
+            LevelCell cell = cells[i];
+            if(cell != null && !cell.m_isMarkedForDeletion)
+            {
+                SetCell(cell.m_x, cell.m_y, cell.m_z, cell);
             }
         }
     }

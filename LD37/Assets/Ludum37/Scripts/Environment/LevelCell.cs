@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class LevelCell : MonoBehaviour {
+    public const float kTransitionTime = 0.25f;
+    public const LeanTweenType kTransitionInEaseType = LeanTweenType.easeSpring;
+    public const LeanTweenType kTransitionOutEaseType = LeanTweenType.easeInOutSine;
+
     public enum CellType: int
     {
         Empty = 0,
@@ -19,20 +23,43 @@ public class LevelCell : MonoBehaviour {
     public int m_y = 0;
     public int m_z = 0;
 
+    public bool m_isMarkedForDeletion = false;
+    
     public void Init(int x, int y, int z)
     {
         m_x = x;
         m_y = y;
         m_z = z;
+
+        OnTransitionUpdate(0.0f);
+        gameObject.SetActive(false);
     }
 
-    public void Show(bool instant = false)
+    public void Show(float delay = 0.0f)
     {
-
+        gameObject.SetActive(true);
+        LeanTween.value(0.0f, 1.0f, kTransitionTime).setDelay(delay).setEase(kTransitionInEaseType).setOnUpdate(OnTransitionUpdate);
     }
 
-    public void Hide(bool instant = false)
+    public void Hide(float delay = 0.0f)
     {
+        LeanTween.value(1.0f, 0.0f, kTransitionTime).setDelay(delay).setEase(kTransitionOutEaseType).setOnUpdate(OnTransitionUpdate).setOnComplete(OnHideComplete);
+    }
 
+    public void OnTransitionUpdate(float t)
+    {
+        transform.localScale = Vector3.one * t;
+    }
+
+    public void OnHideComplete()
+    {
+        if(m_isMarkedForDeletion)
+        {
+            Destroy(gameObject);
+        }
+        else
+        {
+            gameObject.SetActive(false);
+        }
     }
 }
