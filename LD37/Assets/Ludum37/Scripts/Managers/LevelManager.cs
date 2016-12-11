@@ -74,7 +74,7 @@ public class LevelManager : MonoBehaviour {
                 }
                 else
                 {
-                    newLevel.SetCell(cell.m_x, cell.m_y, cell.m_z, cell);
+                    newLevel.AddCell(cell);
                 }
             }
             else

@@ -26,6 +26,35 @@ public class LevelCell : MonoBehaviour {
     public bool m_isMarkedForDeletion = false;
 
     protected Vector3 m_originalScale;
+    protected Renderer[] m_renderers;
+    protected Color[] m_originalColors;
+
+    protected void Awake()
+    {
+        m_renderers = GetComponentsInChildren<Renderer>();
+        m_originalColors = new Color[m_renderers.Length];
+
+        for(int i = 0, n = m_renderers.Length; i < n; ++i)
+        {
+            m_originalColors[i] = m_renderers[i].material.color;
+        }
+    }
+
+    public void SetColor(Color color)
+    {
+        for (int i = 0, n = m_renderers.Length; i < n; ++i)
+        {
+            m_renderers[i].material.color = color;
+        }
+    }
+
+    public void ResetColor()
+    {
+        for (int i = 0, n = m_renderers.Length; i < n; ++i)
+        {
+            m_renderers[i].material.color = m_originalColors[i];
+        }
+    }
 
     public void Init(int x, int y, int z)
     {
