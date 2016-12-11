@@ -24,13 +24,15 @@ public class LevelCell : MonoBehaviour {
     public int m_z = 0;
 
     public bool m_isMarkedForDeletion = false;
-    
+
+    protected Vector3 m_originalScale;
+
     public void Init(int x, int y, int z)
     {
         m_x = x;
         m_y = y;
         m_z = z;
-
+        m_originalScale = transform.localScale;
         OnTransitionUpdate(0.0f);
         gameObject.SetActive(false);
     }
@@ -48,7 +50,7 @@ public class LevelCell : MonoBehaviour {
 
     public void OnTransitionUpdate(float t)
     {
-        transform.localScale = Vector3.one * t;
+        transform.localScale = m_originalScale * t;
     }
 
     public void OnHideComplete()
@@ -61,5 +63,10 @@ public class LevelCell : MonoBehaviour {
         {
             gameObject.SetActive(false);
         }
+    }
+
+    public override string ToString()
+    {
+        return string.Format("{0},{1},{2} - {3}", m_x, m_y, m_z, m_type);
     }
 }

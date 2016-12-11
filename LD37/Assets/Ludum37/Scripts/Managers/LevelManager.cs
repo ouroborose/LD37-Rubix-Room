@@ -53,38 +53,36 @@ public class LevelManager : MonoBehaviour {
 
     protected IEnumerator DoTransition(LevelData data)
     {
-        int minWidth = Mathf.Min(m_activeLevel.m_data.m_width, data.m_width);
-        int minHeight = Mathf.Min(m_activeLevel.m_data.m_height, data.m_height);
-        int minDepth = Mathf.Min(m_activeLevel.m_data.m_depth, data.m_depth);
-
-        List<LevelCell> removeList = new List<LevelCell>();
-
-        for (int z = 0; z < minDepth; ++z)
-        {
-            //for (int y = minHeight-1; y >= 0; --y) // reverse direction so that top cells get removed first
-            for (int y = 0; y < minHeight; ++y)
-            {
-                for (int x = 0; x < minWidth; ++x)
-                {
-                    LevelCell cell = m_activeLevel.GetCell(x, y, z);
-                    LevelData.LevelCellData newCellData = data.GetCellData(x, y, z);
-                    if(cell != null && cell.m_type != newCellData.m_type)
-                    {
-                        removeList.Add(cell);
-                    }
-                }
-            }
-        }
-        for(int i = 0, n = removeList.Count; i < n; ++i)
-        {
-            LevelCell cellToRemove = removeList[i];
-            cellToRemove.m_isMarkedForDeletion = true;
-            cellToRemove.Hide(LevelCell.kTransitionTime*0.5f * (minHeight-cellToRemove.m_y));
-        }
-
         Level newLevel = new Level();
         newLevel.Init(data, m_levelPalettes[data.m_paletteIndex]);
-        newLevel.MapCells(m_activeLevel.m_levelCells);
+
+        foreach (var pair in m_activeLevel.m_levelCells)
+        {
+            LevelCell cell = pair.Value;
+            if (cell == null)
+            {
+                continue;
+            }
+
+            if (data.IsInBounds(cell.m_x, cell.m_y, cell.m_z))
+            {
+                LevelData.LevelCellData newCellData = data.GetCellData(cell.m_x, cell.m_y, cell.m_z);
+                if (cell.m_type != newCellData.m_type)
+                {
+                    cell.m_isMarkedForDeletion = true;
+                    cell.Hide(LevelCell.kTransitionTime * 0.5f * (m_activeLevel.m_data.m_height - cell.m_y));
+                }
+                else
+                {
+                    newLevel.SetCell(cell.m_x, cell.m_y, cell.m_z, cell);
+                }
+            }
+            else
+            {
+                cell.m_isMarkedForDeletion = true;
+                cell.Hide(LevelCell.kTransitionTime * 0.5f * (m_activeLevel.m_data.m_height - cell.m_y));
+            }
+        }
         
         m_activeLevel = newLevel;
         m_activeLevel.GenerateMissingCells();

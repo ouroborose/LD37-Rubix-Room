@@ -13,11 +13,33 @@ public class LevelData {
     [System.Serializable]
     public class LevelCellData
     {
+        public int m_x = 0;
+        public int m_y = 0;
+        public int m_z = 0;
         public LevelCell.CellType m_type = LevelCell.CellType.Empty;
         public LevelCell.RotationId m_rotationId = LevelCell.RotationId.Default;
+
+        public LevelCellData(int x, int y, int z)
+        {
+            m_x = x;
+            m_y = y;
+            m_z = z;
+            m_type = LevelCell.CellType.Empty;
+            m_rotationId = LevelCell.RotationId.Default;
+        }
+
+        public LevelCellData(int x, int y, int z, LevelCell.CellType type, LevelCell.RotationId rotationId)
+        {
+            m_x = x;
+            m_y = y;
+            m_z = z;
+            m_type = type;
+            m_rotationId = rotationId;
+        }
     }
     
     public LevelCellData[] m_cellDatas;
+    public List<LevelCellData> m_occupiedCells;
 
     public void Init(int width, int height, int depth)
     {
@@ -25,6 +47,7 @@ public class LevelData {
         m_height = height;
         m_depth = depth;
         m_cellDatas = new LevelCellData[width*height*depth];
+        m_occupiedCells = new List<LevelCellData>();
     }
 
     public int GetCellIndex(int x, int y, int z)
@@ -36,10 +59,12 @@ public class LevelData {
     {
         if (IsInBounds(x, y, z))
         {
-            LevelCellData data = new LevelCellData();
-            data.m_type = type;
-            data.m_rotationId = rotationId;
+            LevelCellData data = new LevelCellData(x,y,z, type, rotationId);
             m_cellDatas[GetCellIndex(x, y, z)] = data;
+            if(data.m_type != LevelCell.CellType.Empty)
+            {
+                m_occupiedCells.Add(data);
+            }
         }
     }
 
@@ -50,7 +75,7 @@ public class LevelData {
             return m_cellDatas[GetCellIndex(x, y, z)];
         }
 
-        return new LevelCellData();
+        return new LevelCellData(x,y,z);
     }
 
     public bool IsInBounds(int x, int y, int z)

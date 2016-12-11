@@ -6,43 +6,35 @@ public class Level {
     public LevelData m_data;
     public LevelPalette m_palette;
 
-    public LevelCell[] m_levelCells;
+    public Dictionary<int, LevelCell> m_levelCells;
 
     public void Init(LevelData data, LevelPalette palette)
     {
         m_data = data;
         m_palette = palette;
-        m_levelCells = new LevelCell[m_data.m_cellDatas.Length];
+        m_levelCells = new Dictionary<int, LevelCell>();
     }
 
     public void GenerateMissingCells()
     {
-        for (int z = 0; z < m_data.m_depth; ++z)
+        for(int i = 0, n = m_data.m_occupiedCells.Count; i < n; ++i)
         {
-            for (int y = 0; y < m_data.m_height; ++y)
+            LevelData.LevelCellData cellData = m_data.m_occupiedCells[i];
+
+            LevelCell existingCell = GetCell(cellData.m_x, cellData.m_y, cellData.m_z);
+            if (existingCell != null)
             {
-                for (int x = 0; x < m_data.m_width; ++x)
-                {
-                    LevelCell existingCell = GetCell(x, y, z);
-                    if(existingCell != null)
-                    {
-                        continue;
-                    }
-
-                    LevelData.LevelCellData cellData = m_data.GetCellData(x, y, z);
-                    if(cellData.m_type == LevelCell.CellType.Empty)
-                    {
-                        continue;
-                    }
-
-                    GameObject prefab = m_palette.GetLevelCellPrefab(cellData.m_type);
-                    GameObject cellObj = GameObject.Instantiate(prefab, GetCellPosition(x, y, z), GetRotation(cellData.m_rotationId),LevelManager.Instance.transform);
-                    LevelCell cell = cellObj.GetComponent<LevelCell>();
-                    cell.Init(x, y, z);
-                    cell.Show(LevelCell.kTransitionTime * 0.5f * y);
-                    SetCell(x, y, z, cell);
-                }
+                continue;
             }
+
+            GameObject prefab = m_palette.GetLevelCellPrefab(cellData.m_type);
+            GameObject cellObj = GameObject.Instantiate(prefab, GetCellPosition(cellData.m_x, cellData.m_y, cellData.m_z), GetCellRotation(cellData.m_rotationId), LevelManager.Instance.transform);
+            cellObj.transform.localScale = Vector3.one * m_palette.m_scaleSize;
+
+            LevelCell cell = cellObj.GetComponent<LevelCell>();
+            cell.Init(cellData.m_x, cellData.m_y, cellData.m_z);
+            cell.Show(LevelCell.kTransitionTime * 0.5f * cellData.m_y);
+            SetCell(cellData.m_x, cellData.m_y, cellData.m_z, cell);
         }
     }
 
@@ -56,9 +48,10 @@ public class Level {
 
     public LevelCell GetCell(int x, int y, int z)
     {
-        if (m_data.IsInBounds(x, y, z))
+        LevelCell cell;
+        if (m_levelCells.TryGetValue(m_data.GetCellIndex(x, y, z), out cell))
         {
-            return m_levelCells[m_data.GetCellIndex(x, y, z)];
+            return cell;
         }
 
         return null;
@@ -69,29 +62,25 @@ public class Level {
         return new Vector3(x * m_palette.m_spacingSize, y * m_palette.m_spacingSize, z * m_palette.m_spacingSize);
     }
 
-    public Quaternion GetRotation(LevelCell.RotationId rotationId)
+    public Quaternion GetCellRotation(LevelCell.RotationId rotationId)
     {
         return Quaternion.identity;
     }
 
     public void DestroyAllCells()
     {
-        for(int i = 0, n = m_levelCells.Length; i < n; ++i)
+        foreach(var pair in m_levelCells)
         {
-            LevelCell cell = m_levelCells[i];
-            if(cell != null)
-            {
-                GameObject.Destroy(cell.gameObject);
-            }
+            GameObject.Destroy(pair.Value.gameObject);
         }
     }
 
-    public void MapCells(LevelCell[] cells)
+    public void MapCells(Dictionary<int,LevelCell> cells)
     {
-        for(int i = 0, n = cells.Length; i < n; ++i)
+        foreach(var pair in cells)
         {
-            LevelCell cell = cells[i];
-            if(cell != null && !cell.m_isMarkedForDeletion)
+            LevelCell cell = pair.Value;
+            if (cell != null && !cell.m_isMarkedForDeletion)
             {
                 SetCell(cell.m_x, cell.m_y, cell.m_z, cell);
             }

@@ -32,4 +32,42 @@ public class LevelDataHolder : ScriptableObject {
             }
         }
     }
+
+    [ContextMenu("Generate Box")]
+    public void GenerateBox()
+    {
+        m_data = new LevelData();
+        m_data.Init(m_generationWidth, m_generationHeight, m_generationDepth);
+
+        int xEnd = m_generationWidth - 1;
+        int yEnd = m_generationHeight - 1;
+        int zEnd = m_generationDepth - 1;
+
+        for(int x = 0; x < m_generationWidth; ++x)
+        {
+            for (int y = 0; y < m_generationHeight; ++y)
+            {
+                m_data.SetCellData(x, y, 0, LevelCell.CellType.Solid);
+                m_data.SetCellData(x, y, zEnd, LevelCell.CellType.Solid);
+            }
+        }
+
+        for (int z = 0; z < m_generationWidth; ++z)
+        {
+            for (int y = 0; y < m_generationHeight; ++y)
+            {
+                m_data.SetCellData(0, y, z, LevelCell.CellType.Solid);
+                m_data.SetCellData(xEnd, y, z, LevelCell.CellType.Solid);
+            }
+        }
+
+        for (int x = 0; x < m_generationWidth; ++x)
+        {
+            for (int z = 0; z < m_generationDepth; ++z)
+            {
+                m_data.SetCellData(x, 0, z, LevelCell.CellType.Solid);
+                m_data.SetCellData(x, yEnd, z, LevelCell.CellType.Solid);
+            }
+        }
+    }
 }
