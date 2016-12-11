@@ -136,32 +136,22 @@ public class Game : MonoBehaviour
                             m_rotationAxis = GetRotationAxis(Vector3.Cross(startHit.normal, deltaDir));
                         }
 
-                        /*
-                        if (Mathf.Abs(deltaMouse.x) > Mathf.Abs(deltaMouse.y))
-                        {
-                            m_useMouseY = false;
-                            m_rotationAxis = GetRotationAxis(Camera.main.transform.up, GetRotationAxis(m_rotationHitNormal));
-                        }
-                        else
-                        {
-                            m_useMouseY = true;
-                            m_rotationAxis = GetRotationAxis(Camera.main.transform.right, GetRotationAxis(m_rotationHitNormal));
-                        }
-                        */
                         if (m_rotationAxis == Vector3.up)
                         {
                             m_rotationGroup = m_selectedYLayer;
+                            m_rotationGroup.SetColor(Color.green);
                         }
                         else if (m_rotationAxis == Vector3.right)
                         {
                             m_rotationGroup = m_selectedXLayer;
+                            m_rotationGroup.SetColor(Color.blue);
                         }
                         else
                         {
                             m_rotationGroup = m_selectedZLayer;
+                            m_rotationGroup.SetColor(Color.red);
                         }
 
-                        m_rotationGroup.SetColor(Color.green);
                         m_rotationGroup.SetParent(m_rotater.transform);
 
                         m_rotationStarted = true;
