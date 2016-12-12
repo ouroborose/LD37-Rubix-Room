@@ -91,7 +91,21 @@ public class Game : MonoBehaviour
     public void HandleCameraControls()
     {
         Vector3 moveDir = new Vector3(Input.GetAxis("Horizontal"), 0.0f, Input.GetAxis("Vertical"));
-        Camera.main.transform.position += Camera.main.transform.TransformDirection(moveDir) * m_moveSpeed * Time.deltaTime;
+        if(Input.GetKey(KeyCode.Space))
+        {
+            moveDir.y += 1;
+        }
+        if (Input.GetKey(KeyCode.LeftControl))
+        {
+            moveDir.y -= 1;
+        }
+
+        Vector3 newPos = Camera.main.transform.position + Camera.main.transform.TransformDirection(moveDir) * m_moveSpeed * Time.deltaTime;
+        Bounds bounds = LevelManager.Instance.m_activeLevel.m_worldBounds;
+        newPos.x = Mathf.Clamp(newPos.x, bounds.min.x, bounds.max.x);
+        newPos.y = Mathf.Clamp(newPos.y, bounds.min.y, bounds.max.y);
+        newPos.z = Mathf.Clamp(newPos.z, bounds.min.z, bounds.max.z);
+        Camera.main.transform.position = newPos;
 
         if (Input.GetMouseButton(1))
         {

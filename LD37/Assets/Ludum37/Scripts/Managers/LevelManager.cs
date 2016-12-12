@@ -33,9 +33,14 @@ public class LevelManager : MonoBehaviour {
 
     protected void Update()
     {
-        if(Input.GetKeyDown(KeyCode.Space))
+        if (Input.GetKeyDown(KeyCode.Comma))
         {
-            TransitionToNexLevel();
+            TransitionToPreviousLevel();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Period))
+        {
+            TransitionToNextLevel();
         }
 
         if (Input.GetKeyDown(KeyCode.R))
@@ -44,8 +49,19 @@ public class LevelManager : MonoBehaviour {
         }
     }
 
+    [ContextMenu("Transition to previous level")]
+    public void TransitionToPreviousLevel()
+    {
+        m_currentLevel = m_currentLevel - 1;
+        if(m_currentLevel < 0)
+        {
+            m_currentLevel += m_levelDatas.Length;
+        }
+        TransitionTo(m_levelDatas[m_currentLevel].m_data);
+    }
+
     [ContextMenu("Transition to next level")]
-    public void TransitionToNexLevel()
+    public void TransitionToNextLevel()
     {
         m_currentLevel = (m_currentLevel + 1) % m_levelDatas.Length;
         TransitionTo(m_levelDatas[m_currentLevel].m_data);

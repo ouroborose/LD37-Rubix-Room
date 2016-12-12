@@ -8,6 +8,8 @@ public class Level {
 
     public Dictionary<int, LevelCell> m_levelCells;
 
+    public Bounds m_worldBounds;
+
     public class CellGroup : List<LevelCell>
     {
         public void SetColor(Color c)
@@ -49,6 +51,10 @@ public class Level {
         m_xLayers = CreateNewLayers(m_data.m_width);
         m_yLayers = CreateNewLayers(m_data.m_height);
         m_zLayers = CreateNewLayers(m_data.m_depth);
+
+        Vector3 size = new Vector3(m_data.m_width - 3, m_data.m_height - 3, m_data.m_depth - 3);
+        size *= m_palette.m_spacingSize;
+        m_worldBounds = new Bounds(GetCenterWorldPosition(), size);
     }
 
     public void GenerateMissingCells()
@@ -187,7 +193,7 @@ public class Level {
             }
         }
     }
-
+    
     public LevelData CreateLevelData()
     {
         LevelData data = new LevelData();

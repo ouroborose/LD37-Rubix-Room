@@ -95,6 +95,7 @@ public class LevelEditor : MonoBehaviour {
                 }
             }
         }
+        /*
         else if(Input.GetMouseButtonDown(1))
         {
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -109,6 +110,7 @@ public class LevelEditor : MonoBehaviour {
                 }
             }
         }
+        */
         else if(Input.GetMouseButtonDown(2))
         {
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -156,7 +158,7 @@ public class LevelEditor : MonoBehaviour {
     }
 
 #if UNITY_EDITOR
-    [MenuItem("LevelEditor/SaveToFile")]
+    [MenuItem("LevelEditor/Save LevelData...")]
     public static void SaveToFile()
     {
         if(!Application.isPlaying)
@@ -167,12 +169,25 @@ public class LevelEditor : MonoBehaviour {
 
         Debug.Log("Saving");
         string path = EditorUtility.SaveFilePanelInProject("Saving level", "NewLevelData", "asset", "Please enter a name");
-        Debug.Log(path);
-        
-        LevelDataHolder levelData = Editor.CreateInstance<LevelDataHolder>();
-        levelData.m_data = LevelManager.Instance.m_activeLevel.CreateLevelData();
 
-        AssetDatabase.CreateAsset(levelData, path);
+        if(path.Length <= 0)
+        {
+            Debug.Log("Save canceled");
+            return;
+        }
+
+        Debug.Log(path);
+        LevelDataHolder levelData = AssetDatabase.LoadAssetAtPath<LevelDataHolder>(path);
+        if(levelData == null)
+        {
+            levelData = Editor.CreateInstance<LevelDataHolder>();
+            levelData.m_data = LevelManager.Instance.m_activeLevel.CreateLevelData();
+            AssetDatabase.CreateAsset(levelData, path);
+        }
+        else
+        {
+            levelData.m_data = LevelManager.Instance.m_activeLevel.CreateLevelData();
+        }
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
