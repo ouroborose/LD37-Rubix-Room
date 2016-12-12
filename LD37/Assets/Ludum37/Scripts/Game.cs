@@ -32,7 +32,7 @@ public class Game : MonoBehaviour
 
     public float m_autoCompleteSpeed = 0.25f;
     public LeanTweenType m_autoCompleteEase = LeanTweenType.easeOutSine;
-
+    
     protected LevelCell m_selectedCell;
     protected Level.CellGroup m_selectedXLayer = new Level.CellGroup();
     protected Level.CellGroup m_selectedYLayer = new Level.CellGroup();
@@ -62,9 +62,17 @@ public class Game : MonoBehaviour
 
     protected void Update()
     {
-        if(!m_isAutoCompleting)
+        if (!m_isAutoCompleting)
         {
-            HandleRotationControls();
+            if(Input.GetKeyDown(KeyCode.F1) && !m_rotationStarted)
+            {
+                // editor mode
+                LevelEditor.Instance.enabled = !LevelEditor.Instance.enabled;
+            }
+            else if(!LevelEditor.Instance.enabled)
+            {
+                HandleRotationControls();
+            }
         }
     }
 
@@ -91,6 +99,11 @@ public class Game : MonoBehaviour
         }
     }
 
+    public void HandleEditorControls()
+    {
+
+    }
+
     public void HandleRotationControls()
     {
         if (Input.GetMouseButtonDown(0))
@@ -102,7 +115,6 @@ public class Game : MonoBehaviour
                 LevelCell cell = hit.collider.GetComponent<LevelCell>();
                 if (cell != m_selectedCell)
                 {
-                    //Debug.Log(cell.ToString());
                     Select(cell);
 
                     m_rotationHitNormal = hit.normal;
@@ -261,9 +273,9 @@ public class Game : MonoBehaviour
 
         m_selectedCell = cell;
 
-        m_selectedXLayer.AddRange(LevelManager.Instance.m_activeLevel.m_xLayers[cell.m_x]);
-        m_selectedYLayer.AddRange(LevelManager.Instance.m_activeLevel.m_yLayers[cell.m_y]);
-        m_selectedZLayer.AddRange(LevelManager.Instance.m_activeLevel.m_zLayers[cell.m_z]);
+        m_selectedXLayer.AddRange(LevelManager.Instance.m_activeLevel.m_xLayers[cell.m_data.m_x]);
+        m_selectedYLayer.AddRange(LevelManager.Instance.m_activeLevel.m_yLayers[cell.m_data.m_y]);
+        m_selectedZLayer.AddRange(LevelManager.Instance.m_activeLevel.m_zLayers[cell.m_data.m_z]);
 
         /*
         m_selectedXLayer.SetColor(Color.blue);

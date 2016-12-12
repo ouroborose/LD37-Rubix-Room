@@ -10,34 +10,6 @@ public class LevelData {
     public int m_height = 0; 
     public int m_depth = 0;
 
-    [System.Serializable]
-    public class LevelCellData
-    {
-        public int m_x = 0;
-        public int m_y = 0;
-        public int m_z = 0;
-        public LevelCell.CellType m_type = LevelCell.CellType.Empty;
-        public LevelCell.RotationId m_rotationId = LevelCell.RotationId.Default;
-
-        public LevelCellData(int x, int y, int z)
-        {
-            m_x = x;
-            m_y = y;
-            m_z = z;
-            m_type = LevelCell.CellType.Empty;
-            m_rotationId = LevelCell.RotationId.Default;
-        }
-
-        public LevelCellData(int x, int y, int z, LevelCell.CellType type, LevelCell.RotationId rotationId)
-        {
-            m_x = x;
-            m_y = y;
-            m_z = z;
-            m_type = type;
-            m_rotationId = rotationId;
-        }
-    }
-    
     public LevelCellData[] m_cellDatas;
     public List<LevelCellData> m_occupiedCells;
 
@@ -55,13 +27,13 @@ public class LevelData {
         return x + m_height * y + z * m_height * m_width;
     }
 
-    public void SetCellData(int x, int y, int z, LevelCell.CellType type, LevelCell.RotationId rotationId = LevelCell.RotationId.Default)
+    public void SetCellData(int x, int y, int z, LevelCellType type, RotationId rotationId = RotationId.Up)
     {
         if (IsInBounds(x, y, z))
         {
             LevelCellData data = new LevelCellData(x,y,z, type, rotationId);
             m_cellDatas[GetCellIndex(x, y, z)] = data;
-            if(data.m_type != LevelCell.CellType.Empty)
+            if(data.m_type != LevelCellType.Empty)
             {
                 m_occupiedCells.Add(data);
             }

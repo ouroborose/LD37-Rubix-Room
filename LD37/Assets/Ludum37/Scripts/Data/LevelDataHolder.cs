@@ -27,7 +27,7 @@ public class LevelDataHolder : ScriptableObject {
                 string[] cells = rows[m_generationHeight-1-y].Split(',');
                 for(int x = 0; x < m_generationWidth; ++x)
                 {
-                    m_data.SetCellData(x, y, z, (LevelCell.CellType)int.Parse(cells[x]));
+                    m_data.SetCellData(x, y, z, (LevelCellType)int.Parse(cells[x]));
                 }
             }
         }
@@ -47,8 +47,8 @@ public class LevelDataHolder : ScriptableObject {
         {
             for (int y = 0; y < m_generationHeight; ++y)
             {
-                m_data.SetCellData(x, y, 0, LevelCell.CellType.Solid);
-                m_data.SetCellData(x, y, zEnd, LevelCell.CellType.Solid);
+                m_data.SetCellData(x, y, 0, LevelCellType.Solid);
+                m_data.SetCellData(x, y, zEnd, LevelCellType.Solid);
             }
         }
 
@@ -56,8 +56,8 @@ public class LevelDataHolder : ScriptableObject {
         {
             for (int y = 0; y < m_generationHeight; ++y)
             {
-                m_data.SetCellData(0, y, z, LevelCell.CellType.Solid);
-                m_data.SetCellData(xEnd, y, z, LevelCell.CellType.Solid);
+                m_data.SetCellData(0, y, z, LevelCellType.Solid);
+                m_data.SetCellData(xEnd, y, z, LevelCellType.Solid);
             }
         }
 
@@ -65,8 +65,8 @@ public class LevelDataHolder : ScriptableObject {
         {
             for (int z = 0; z < m_generationDepth; ++z)
             {
-                m_data.SetCellData(x, 0, z, LevelCell.CellType.Solid);
-                m_data.SetCellData(x, yEnd, z, LevelCell.CellType.Solid);
+                m_data.SetCellData(x, 0, z, LevelCellType.Solid);
+                m_data.SetCellData(x, yEnd, z, LevelCellType.Solid);
             }
         }
     }

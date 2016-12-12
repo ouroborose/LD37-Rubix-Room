@@ -55,7 +55,7 @@ public class Level {
     {
         for(int i = 0, n = m_data.m_occupiedCells.Count; i < n; ++i)
         {
-            LevelData.LevelCellData cellData = m_data.m_occupiedCells[i];
+            LevelCellData cellData = m_data.m_occupiedCells[i];
 
             LevelCell existingCell = GetCell(cellData.m_x, cellData.m_y, cellData.m_z);
             if (existingCell != null)
@@ -63,14 +63,7 @@ public class Level {
                 continue;
             }
 
-            GameObject prefab = m_palette.GetLevelCellPrefab(cellData.m_type);
-            GameObject cellObj = GameObject.Instantiate(prefab, GetCellWorldPosition(cellData.m_x, cellData.m_y, cellData.m_z), GetCellRotation(cellData.m_rotationId), LevelManager.Instance.transform);
-            cellObj.transform.localScale = Vector3.one * m_palette.m_scaleSize;
-
-            LevelCell cell = cellObj.GetComponent<LevelCell>();
-            cell.Init(cellData.m_x, cellData.m_y, cellData.m_z);
-            cell.Show(LevelCell.kTransitionTime * 0.5f * cellData.m_y);
-            AddCell(cell);
+            CreateCell(cellData).Show(LevelCell.kTransitionTime * 0.5f * cellData.m_y);
         }
     }
 
@@ -95,35 +88,63 @@ public class Level {
         for (int i = 0, n = cells.Count; i < n; ++i)
         {
             LevelCell cell = cells[i];
-            cell.m_x = Mathf.RoundToInt(cell.transform.position.x / m_palette.m_spacingSize);
-            cell.m_y = Mathf.RoundToInt(cell.transform.position.y / m_palette.m_spacingSize);
-            cell.m_z = Mathf.RoundToInt(cell.transform.position.z / m_palette.m_spacingSize);
+            cell.UpdatePoseData(m_palette.m_spacingSize);
             AddCell(cell);
         }
     }
 
     public void RemoveCell(LevelCell cell)
     {
-        m_xLayers[cell.m_x].Remove(cell);
-        m_yLayers[cell.m_y].Remove(cell);
-        m_zLayers[cell.m_z].Remove(cell);
+        m_xLayers[cell.m_data.m_x].Remove(cell);
+        m_yLayers[cell.m_data.m_y].Remove(cell);
+        m_zLayers[cell.m_data.m_z].Remove(cell);
         m_levelCells.Remove(GetCellIndex(cell));
     }
 
     public int GetCellIndex(LevelCell cell)
     {
-        return m_data.GetCellIndex(cell.m_x, cell.m_y, cell.m_z);
+        return m_data.GetCellIndex(cell.m_data.m_x, cell.m_data.m_y, cell.m_data.m_z);
+    }
+
+    public LevelCellData CreateCellData(Vector3 worldPos, LevelCellType type, RotationId rotationId = RotationId.Up)
+    {
+        int x = Mathf.RoundToInt(worldPos.x / m_palette.m_spacingSize);
+        int y = Mathf.RoundToInt(worldPos.y / m_palette.m_spacingSize);
+        int z = Mathf.RoundToInt(worldPos.z / m_palette.m_spacingSize);
+        return new LevelCellData(x, y, z, type, rotationId);
+    }
+
+    public LevelCell CreateCell(Vector3 worldPos, LevelCellType type, RotationId rotationId = RotationId.Up)
+    {
+        return CreateCell(CreateCellData(worldPos, type, rotationId));
+    }
+
+    public LevelCell CreateCell(LevelCellData data)
+    {
+        return CreateCell(data.m_x, data.m_y, data.m_z, data.m_type, data.m_rotationId);
+    }
+
+    public LevelCell CreateCell(int x, int y, int z, LevelCellType type, RotationId rotationId = RotationId.Up)
+    {
+        GameObject prefab = m_palette.GetLevelCellPrefab(type);
+        GameObject cellObj = GameObject.Instantiate(prefab, GetCellWorldPosition(x, y, z), RotationUtil.GetRotation(rotationId), LevelManager.Instance.transform);
+        cellObj.transform.localScale = Vector3.one * m_palette.m_scaleSize;
+
+        LevelCell cell = cellObj.GetComponent<LevelCell>();
+        cell.Init(x, y, z);
+        AddCell(cell);
+        return cell;
     }
 
     public void AddCell(LevelCell cell)
     {
-        if (m_data.IsInBounds(cell.m_x, cell.m_y, cell.m_z))
+        if (m_data.IsInBounds(cell.m_data.m_x, cell.m_data.m_y, cell.m_data.m_z))
         {
             m_levelCells[GetCellIndex(cell)] = cell;
 
-            m_xLayers[cell.m_x].Add(cell);
-            m_yLayers[cell.m_y].Add(cell);
-            m_zLayers[cell.m_z].Add(cell);
+            m_xLayers[cell.m_data.m_x].Add(cell);
+            m_yLayers[cell.m_data.m_y].Add(cell);
+            m_zLayers[cell.m_data.m_z].Add(cell);
         }
     }
 
@@ -141,11 +162,6 @@ public class Level {
     public Vector3 GetCellWorldPosition(int x, int y, int z)
     {
         return new Vector3(x * m_palette.m_spacingSize, y * m_palette.m_spacingSize, z * m_palette.m_spacingSize);
-    }
-
-    public Quaternion GetCellRotation(LevelCell.RotationId rotationId)
-    {
-        return Quaternion.identity;
     }
     
     public Vector3 GetCenterWorldPosition()

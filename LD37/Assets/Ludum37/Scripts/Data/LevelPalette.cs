@@ -8,7 +8,7 @@ public class LevelPalette : ScriptableObject {
     public float m_scaleSize = 1.0f;
     public GameObject[] m_palettePrefabs;
 
-    public Dictionary<LevelCell.CellType, List<GameObject>> m_paletteMapping = new Dictionary<LevelCell.CellType, List<GameObject>>();
+    public Dictionary<LevelCellType, List<GameObject>> m_paletteMapping = new Dictionary<LevelCellType, List<GameObject>>();
 
     public void Init()
     {
@@ -17,17 +17,17 @@ public class LevelPalette : ScriptableObject {
             GameObject prefab = m_palettePrefabs[i];
             LevelCell cell = prefab.GetComponent<LevelCell>();
             List<GameObject> prefabList = null;
-            if(!m_paletteMapping.TryGetValue(cell.m_type, out prefabList) && prefabList == null)
+            if(!m_paletteMapping.TryGetValue(cell.m_data.m_type, out prefabList) && prefabList == null)
             {
                 prefabList = new List<GameObject>();
-                m_paletteMapping.Add(cell.m_type, prefabList);
+                m_paletteMapping.Add(cell.m_data.m_type, prefabList);
             }
 
             prefabList.Add(prefab);
         }
     }
     
-    public GameObject GetLevelCellPrefab(LevelCell.CellType type)
+    public GameObject GetLevelCellPrefab(LevelCellType type)
     {
         List<GameObject> prefabList;
         if(m_paletteMapping.TryGetValue(type, out prefabList) && prefabList != null)

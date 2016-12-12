@@ -7,21 +7,7 @@ public class LevelCell : MonoBehaviour {
     public const LeanTweenType kTransitionInEaseType = LeanTweenType.easeSpring;
     public const LeanTweenType kTransitionOutEaseType = LeanTweenType.easeInOutSine;
 
-    public enum CellType: int
-    {
-        Empty = 0,
-        Solid
-    }
-
-    public enum RotationId: int
-    {
-        Default = 0,
-    }
-
-    public CellType m_type = CellType.Empty;
-    public int m_x = 0;
-    public int m_y = 0;
-    public int m_z = 0;
+    public LevelCellData m_data;
 
     public bool m_isMarkedForDeletion = false;
 
@@ -38,6 +24,11 @@ public class LevelCell : MonoBehaviour {
         {
             m_originalColors[i] = m_renderers[i].material.color;
         }
+    }
+
+    protected void OnDestroy()
+    {
+        LeanTween.cancel(gameObject, false);
     }
 
     public void SetColor(Color color)
@@ -58,12 +49,20 @@ public class LevelCell : MonoBehaviour {
 
     public void Init(int x, int y, int z)
     {
-        m_x = x;
-        m_y = y;
-        m_z = z;
+        m_data.m_x = x;
+        m_data.m_y = y;
+        m_data.m_z = z;
         m_originalScale = transform.localScale;
         OnTransitionUpdate(0.0f);
         gameObject.SetActive(false);
+    }
+
+    public void UpdatePoseData(float spacing)
+    {
+        m_data.m_x = Mathf.RoundToInt(transform.position.x / spacing);
+        m_data.m_y = Mathf.RoundToInt(transform.position.y / spacing);
+        m_data.m_z = Mathf.RoundToInt(transform.position.z / spacing);
+        m_data.m_rotationId = RotationUtil.GetClosestId(transform.rotation);
     }
 
     public void Show(float delay = 0.0f)
@@ -96,6 +95,6 @@ public class LevelCell : MonoBehaviour {
 
     public override string ToString()
     {
-        return string.Format("{0},{1},{2} - {3}", m_x, m_y, m_z, m_type);
+        return string.Format("{0},{1},{2} - {3} - {4}", m_data.m_x, m_data.m_y, m_data.m_z, m_data.m_type, m_data.m_rotationId);
     }
 }
