@@ -62,14 +62,19 @@ public class Game : MonoBehaviour
 
     protected void Update()
     {
+        if(LevelManager.Instance == null)
+        {
+            return;
+        }
+
         if (!m_isAutoCompleting)
         {
-            if(Input.GetKeyDown(KeyCode.F1) && !m_rotationStarted)
+            if(Input.GetKeyDown(KeyCode.F1) && !m_rotationStarted && LevelEditor.Instance != null)
             {
                 // editor mode
                 LevelEditor.Instance.enabled = !LevelEditor.Instance.enabled;
             }
-            else if(!LevelEditor.Instance.enabled)
+            else if(LevelEditor.Instance == null || !LevelEditor.Instance.enabled)
             {
                 HandleRotationControls();
             }

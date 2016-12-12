@@ -9,7 +9,7 @@ public class LevelManager : MonoBehaviour {
     public LevelDataHolder[] m_levelDatas;
     public LevelPalette[] m_levelPalettes;
 
-    public int currentLevel = 0;
+    public int m_currentLevel = 0;
     public Level m_activeLevel;
 
     protected void Awake()
@@ -22,10 +22,10 @@ public class LevelManager : MonoBehaviour {
         }
 
         // create first level
-        if (currentLevel < m_levelDatas.Length)
+        if (m_currentLevel < m_levelDatas.Length)
         {
             m_activeLevel = new Level();
-            LevelData data = m_levelDatas[currentLevel].m_data;
+            LevelData data = m_levelDatas[m_currentLevel].m_data;
             m_activeLevel.Init(data, m_levelPalettes[data.m_paletteIndex]);
             m_activeLevel.GenerateMissingCells();
         }
@@ -37,13 +37,24 @@ public class LevelManager : MonoBehaviour {
         {
             TransitionToNexLevel();
         }
+
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            ResetCurrentLevel();
+        }
     }
 
     [ContextMenu("Transition to next level")]
     public void TransitionToNexLevel()
     {
-        currentLevel = (currentLevel + 1) % m_levelDatas.Length;
-        TransitionTo(m_levelDatas[currentLevel].m_data);
+        m_currentLevel = (m_currentLevel + 1) % m_levelDatas.Length;
+        TransitionTo(m_levelDatas[m_currentLevel].m_data);
+    }
+
+    [ContextMenu("Reset current level")]
+    public void ResetCurrentLevel()
+    {
+        TransitionTo(m_levelDatas[m_currentLevel].m_data);
     }
 
     public void TransitionTo(LevelData data)

@@ -1,98 +1,22 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
+#endif
 
 public class LevelEditor : MonoBehaviour {
     private static LevelEditor s_instance;
     public static LevelEditor Instance { get { return s_instance; } }
-
-    public LevelCellType m_currentType = LevelCellType.Solid;
+    
+    protected LevelCellType m_currentType = LevelCellType.Solid;
 
     protected List<Rect> m_buttonRects;
 
-    public Stack<BaseCommand> m_undoStack = new Stack<BaseCommand>();
-    public Stack<BaseCommand> m_redoStack = new Stack<BaseCommand>();
-
-    public class DeleteCommand : BaseCommand
-    {
-        public LevelCellData m_data;
-
-        public DeleteCommand(LevelCellData data)
-        {
-            m_data = new LevelCellData(data);
-        }
-
-        public override void Execute()
-        {
-            base.Execute();
-            LevelCell cell = LevelManager.Instance.m_activeLevel.GetCell(m_data.m_x, m_data.m_y, m_data.m_z);
-            LevelManager.Instance.m_activeLevel.RemoveCell(cell);
-            Destroy(cell.gameObject);
-        }
-
-        public override void Undo()
-        {
-            base.Undo();
-            LevelManager.Instance.m_activeLevel.CreateCell(m_data).Show();
-        }
-    }
-
-    public class CreateCommand : BaseCommand
-    {
-        public LevelCellData m_data;
-
-        public CreateCommand(Vector3 worldPos, LevelCellType type, RotationId rotationId)
-        {
-            m_data = LevelManager.Instance.m_activeLevel.CreateCellData(worldPos, type, rotationId);
-        }
-
-        public override void Execute()
-        {
-            base.Execute();
-            LevelManager.Instance.m_activeLevel.CreateCell(m_data).Show();
-        }
-
-        public override void Undo()
-        {
-            base.Undo();
-            LevelCell cell = LevelManager.Instance.m_activeLevel.GetCell(m_data.m_x, m_data.m_y, m_data.m_z);
-            LevelManager.Instance.m_activeLevel.RemoveCell(cell);
-            Destroy(cell.gameObject);
-        }
-    }
-
-    public class RotateCommand : BaseCommand
-    {
-        public LevelCellData m_data;
-        public RotationId m_originalRotationId;
-        public RotationId m_newRotationId;
-
-        public RotateCommand(LevelCellData data)
-        {
-            m_data = new LevelCellData(data);
-            m_originalRotationId = m_data.m_rotationId;
-            m_newRotationId = (RotationId)((((int)m_originalRotationId) + 1) % ((int)RotationId.NumIds));
-        }
-
-        public override void Execute()
-        {
-            base.Execute();
-            SetRotation(m_newRotationId);            
-        }
-
-        public override void Undo()
-        {
-            base.Undo();
-            SetRotation(m_originalRotationId);
-        }
-
-        public void SetRotation(RotationId id)
-        {
-            LevelCell cell = LevelManager.Instance.m_activeLevel.GetCell(m_data.m_x, m_data.m_y, m_data.m_z);
-            cell.m_data.m_rotationId = id;
-            cell.transform.rotation = RotationUtil.GetRotation(cell.m_data.m_rotationId);
-        }
-    }
+    protected Stack<BaseCommand> m_undoStack = new Stack<BaseCommand>();
+    protected Stack<BaseCommand> m_redoStack = new Stack<BaseCommand>();
 
     protected void Awake()
     {
@@ -232,6 +156,30 @@ public class LevelEditor : MonoBehaviour {
     }
 
 #if UNITY_EDITOR
+    [MenuItem("LevelEditor/SaveToFile")]
+    public static void SaveToFile()
+    {
+        if(!Application.isPlaying)
+        {
+            Debug.LogWarning("Cannot save when game is not running");
+            return;
+        }
+
+        Debug.Log("Saving");
+        string path = EditorUtility.SaveFilePanelInProject("Saving level", "NewLevelData", "asset", "Please enter a name");
+        Debug.Log(path);
+        
+        LevelDataHolder levelData = Editor.CreateInstance<LevelDataHolder>();
+        levelData.m_data = LevelManager.Instance.m_activeLevel.CreateLevelData();
+
+        AssetDatabase.CreateAsset(levelData, path);
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        EditorUtility.FocusProjectWindow();
+        Selection.activeObject = levelData;
+    }
+
     protected void OnGUI()
     {
         for(int i = 0, n = (int)LevelCellType.NumTypes; i < n; ++i)
@@ -254,4 +202,87 @@ public class LevelEditor : MonoBehaviour {
         }
     }
 #endif
+
+    public class DeleteCommand : BaseCommand
+    {
+        public LevelCellData m_data;
+
+        public DeleteCommand(LevelCellData data)
+        {
+            m_data = new LevelCellData(data);
+        }
+
+        public override void Execute()
+        {
+            base.Execute();
+            LevelCell cell = LevelManager.Instance.m_activeLevel.GetCell(m_data.m_x, m_data.m_y, m_data.m_z);
+            LevelManager.Instance.m_activeLevel.RemoveCell(cell);
+            Destroy(cell.gameObject);
+        }
+
+        public override void Undo()
+        {
+            base.Undo();
+            LevelManager.Instance.m_activeLevel.CreateCell(m_data).Show();
+        }
+    }
+
+    public class CreateCommand : BaseCommand
+    {
+        public LevelCellData m_data;
+
+        public CreateCommand(Vector3 worldPos, LevelCellType type, RotationId rotationId)
+        {
+            m_data = LevelManager.Instance.m_activeLevel.CreateCellData(worldPos, type, rotationId);
+        }
+
+        public override void Execute()
+        {
+            base.Execute();
+            LevelManager.Instance.m_activeLevel.CreateCell(m_data).Show();
+        }
+
+        public override void Undo()
+        {
+            base.Undo();
+            LevelCell cell = LevelManager.Instance.m_activeLevel.GetCell(m_data.m_x, m_data.m_y, m_data.m_z);
+            LevelManager.Instance.m_activeLevel.RemoveCell(cell);
+            Destroy(cell.gameObject);
+        }
+    }
+
+    public class RotateCommand : BaseCommand
+    {
+        public LevelCellData m_data;
+        public RotationId m_originalRotationId;
+        public RotationId m_newRotationId;
+
+        public RotateCommand(LevelCellData data)
+        {
+            m_data = new LevelCellData(data);
+            m_originalRotationId = m_data.m_rotationId;
+            m_newRotationId = (RotationId)((((int)m_originalRotationId) + 1) % ((int)RotationId.NumIds));
+        }
+
+        public override void Execute()
+        {
+            base.Execute();
+            SetRotation(m_newRotationId);
+        }
+
+        public override void Undo()
+        {
+            base.Undo();
+            SetRotation(m_originalRotationId);
+        }
+
+        public void SetRotation(RotationId id)
+        {
+            LevelCell cell = LevelManager.Instance.m_activeLevel.GetCell(m_data.m_x, m_data.m_y, m_data.m_z);
+            cell.m_data.m_rotationId = id;
+            cell.transform.rotation = RotationUtil.GetRotation(cell.m_data.m_rotationId);
+        }
+    }
 }
+
+

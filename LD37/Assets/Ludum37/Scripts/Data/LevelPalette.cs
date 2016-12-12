@@ -8,11 +8,12 @@ public class LevelPalette : ScriptableObject {
     public float m_scaleSize = 1.0f;
     public GameObject[] m_palettePrefabs;
 
-    public Dictionary<LevelCellType, List<GameObject>> m_paletteMapping = new Dictionary<LevelCellType, List<GameObject>>();
+    public Dictionary<LevelCellType, List<GameObject>> m_paletteMapping;
 
     public void Init()
     {
-        for(int i = 0, n = m_palettePrefabs.Length; i < n; ++i)
+        m_paletteMapping = new Dictionary<LevelCellType, List<GameObject>>();
+        for (int i = 0, n = m_palettePrefabs.Length; i < n; ++i)
         {
             GameObject prefab = m_palettePrefabs[i];
             LevelCell cell = prefab.GetComponent<LevelCell>();

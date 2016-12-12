@@ -56,7 +56,6 @@ public class Level {
         for(int i = 0, n = m_data.m_occupiedCells.Count; i < n; ++i)
         {
             LevelCellData cellData = m_data.m_occupiedCells[i];
-
             LevelCell existingCell = GetCell(cellData.m_x, cellData.m_y, cellData.m_z);
             if (existingCell != null)
             {
@@ -187,5 +186,16 @@ public class Level {
                 AddCell(cell);
             }
         }
+    }
+
+    public LevelData CreateLevelData()
+    {
+        LevelData data = new LevelData();
+        data.Init(m_data.m_width, m_data.m_height, m_data.m_depth);
+        foreach(var pair in m_levelCells)
+        {
+            data.AddCellData(pair.Value.m_data);
+        }
+        return data;
     }
 }

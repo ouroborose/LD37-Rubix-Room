@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using System.Collections.Generic;
 
 [System.Serializable]
 public class LevelData {
@@ -12,6 +10,7 @@ public class LevelData {
 
     public LevelCellData[] m_cellDatas;
     public List<LevelCellData> m_occupiedCells;
+    
 
     public void Init(int width, int height, int depth)
     {
@@ -40,14 +39,24 @@ public class LevelData {
         }
     }
 
+    public void AddCellData(LevelCellData data)
+    {
+        SetCellData(data.m_x, data.m_y, data.m_z, data.m_type, data.m_rotationId);
+    }
+
     public LevelCellData GetCellData(int x, int y, int z)
     {
+        LevelCellData data = null;
         if (IsInBounds(x,y,z))
         {
-            return m_cellDatas[GetCellIndex(x, y, z)];
+            data = m_cellDatas[GetCellIndex(x, y, z)];
         }
-
-        return new LevelCellData(x,y,z);
+        
+        if (data == null)
+        {
+            data = new LevelCellData(x, y, z);
+        }
+        return data;
     }
 
     public bool IsInBounds(int x, int y, int z)

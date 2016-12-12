@@ -1,4 +1,5 @@
-﻿[System.Serializable]
+﻿
+[System.Serializable]
 public class LevelCellData
 {
     public int m_x = 0;
