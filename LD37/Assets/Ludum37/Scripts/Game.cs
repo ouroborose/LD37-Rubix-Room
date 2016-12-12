@@ -173,7 +173,6 @@ public class Game : MonoBehaviour
                     Vector3 deltaMouse = Input.mousePosition - m_rotationMouseStart;
                     if (deltaMouse.sqrMagnitude > 50)
                     {
-
                         m_rotater = new GameObject("Rotater");
                         m_rotater.transform.SetParent(transform);
                         m_rotater.transform.position = LevelManager.Instance.m_activeLevel.GetCenterWorldPosition();
@@ -203,6 +202,10 @@ public class Game : MonoBehaviour
                         }
 
                         m_rotationGroup.SetParent(m_rotater.transform);
+                        if(m_player.m_isMoving)
+                        {
+                            m_player.Stop();
+                        }
 
                         m_rotationStarted = true;
                     }
@@ -238,6 +241,7 @@ public class Game : MonoBehaviour
                     rotatedCells.ResetColor();
                     LevelManager.Instance.m_activeLevel.UpdateCells(rotatedCells);
                     Destroy(m_rotater);
+                    m_player.m_gravity = -m_player.transform.up;
                     m_isAutoCompleting = false;
                 });
                 ClearSelection();

@@ -37,12 +37,14 @@ public class BaseActor : MonoBehaviour {
     protected Stack<int> m_path = new Stack<int>();
     protected Dictionary<int, Vector3> m_pathGravities = new Dictionary<int, Vector3>();
     
+    public bool m_isMoving { get { return m_moveTimer > 0.0f; } }
+
     protected float m_moveTimer = 0.0f;
     protected float m_actualMoveTime = 1.0f;
     protected Vector3 m_startPosition;
-    protected Vector3 m_desiredPosition;
-    protected Quaternion m_desiredRotation;
-    protected Vector3 m_gravity = Vector3.down;
+    public Vector3 m_desiredPosition;
+    public Quaternion m_desiredRotation;
+    public Vector3 m_gravity = Vector3.down;
 
     protected virtual void Update()
     {
@@ -70,7 +72,7 @@ public class BaseActor : MonoBehaviour {
                 }
                 else
                 {
-                    DiscoverGroundCell();
+                    SetGroundCell(GetCell(m_desiredPosition + m_gravity));
                 }
 
                 Vector3 lookDir = (m_desiredPosition - m_startPosition).normalized;
@@ -87,9 +89,18 @@ public class BaseActor : MonoBehaviour {
             m_moveTimer -= Time.deltaTime;
             float t = 1.0f - (m_moveTimer / m_actualMoveTime);
             transform.position = Vector3.Lerp(m_startPosition, m_desiredPosition, t);
+            transform.rotation = Quaternion.Slerp(transform.rotation, m_desiredRotation, t);
         }
 
-        transform.rotation = Quaternion.RotateTowards(transform.rotation, m_desiredRotation, Time.deltaTime * m_turnSpeed);
+        
+    }
+
+    public void Stop()
+    {
+        transform.position = m_desiredPosition;
+        transform.rotation = m_desiredRotation;
+        m_moveTimer = 0.0f;
+        ClearPath();
     }
 
     public void DiscoverGroundCell()
