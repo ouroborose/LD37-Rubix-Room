@@ -151,7 +151,15 @@ public class Game : MonoBehaviour
                 }
                 else
                 {
-                    Vector3 destPos = hit.point + hit.normal * LevelManager.Instance.m_activeLevel.m_palette.m_spacingSize * 0.5f;
+                    Vector3 destPos = hit.point;
+                    if (cell.m_data.m_type == LevelCellType.Ramp)
+                    {
+                        destPos -= hit.normal * LevelManager.Instance.m_activeLevel.m_palette.m_spacingSize * 0.5f;
+                    }
+                    else
+                    {
+                        destPos += hit.normal * LevelManager.Instance.m_activeLevel.m_palette.m_spacingSize * 0.5f;
+                    }
                     m_player.PathTo(destPos);
                 }
             }

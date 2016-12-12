@@ -81,7 +81,15 @@ public class LevelEditor : MonoBehaviour {
         RaycastHit hit;
         if (Physics.Raycast(ray, out hit))
         {
-            Vector3 pos = hit.point + hit.normal * LevelManager.Instance.m_activeLevel.m_palette.m_spacingSize * 0.5f;
+            Vector3 pos = hit.point;
+            if (m_currentType == LevelCellType.Empty || Input.GetKey(KeyCode.LeftShift))
+            {
+                pos -= hit.normal * LevelManager.Instance.m_activeLevel.m_palette.m_spacingSize * 0.5f;
+            }
+            else
+            {
+                pos += hit.normal * LevelManager.Instance.m_activeLevel.m_palette.m_spacingSize * 0.5f;
+            }
             m_previewer.position = LevelManager.Instance.m_activeLevel.GetCellWorldPosition(pos);
 
             if (Input.GetMouseButtonDown(0))

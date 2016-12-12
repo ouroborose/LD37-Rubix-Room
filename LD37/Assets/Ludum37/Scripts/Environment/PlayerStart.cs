@@ -11,7 +11,7 @@ public class PlayerStart : LevelCell {
         {
             player.transform.position = transform.position;
             player.transform.rotation = transform.rotation;
-            player.UpdateGroundCell();
+            player.DiscoverGroundCell();
         }
     }
 }

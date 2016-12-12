@@ -32,38 +32,74 @@ public class BaseActor : MonoBehaviour {
     public LevelCell m_groundCell;
 
     protected Coroutine m_pathFindingCoroutine;
+
+    protected bool m_pathReady = false;
     protected Stack<int> m_path = new Stack<int>();
+    protected Dictionary<int, Vector3> m_pathGravities = new Dictionary<int, Vector3>();
     
     protected float m_moveTimer = 0.0f;
+    protected float m_actualMoveTime = 1.0f;
     protected Vector3 m_startPosition;
     protected Vector3 m_desiredPosition;
     protected Quaternion m_desiredRotation;
+    protected Vector3 m_gravity = Vector3.down;
 
     protected virtual void Update()
     {
         if(m_moveTimer <= 0)
         {
-            if (m_path.Count > 0)
+            if (m_path.Count > 0 && m_pathReady)
             {
                 m_startPosition = transform.position;
-                m_desiredPosition = GetCellWorldPosition(m_path.Pop());
-                m_desiredRotation = Quaternion.LookRotation((m_desiredPosition - m_startPosition).normalized, Vector3.up);
-                m_moveTimer += m_movementTime;
+                int cellIndex = m_path.Pop();
+                m_desiredPosition = GetCellWorldPosition(cellIndex);
+                m_gravity = m_pathGravities[cellIndex];
+
+                m_actualMoveTime = m_movementTime;
+
+                Vector3 up = -m_gravity;
+                LevelCell cell = GetCell(cellIndex);
+                if (cell != null && cell.m_data.m_type == LevelCellType.Ramp)
+                {
+                    if(m_groundCell != null && m_groundCell.m_data.m_type == LevelCellType.Ramp)
+                    {
+                        m_actualMoveTime *= 1.5f;
+                    }
+                    m_desiredPosition += up * 0.5f;
+                    SetGroundCell(cell);
+                }
+                else
+                {
+                    DiscoverGroundCell();
+                }
+
+                Vector3 lookDir = (m_desiredPosition - m_startPosition).normalized;
+                lookDir = Vector3.Cross(up, lookDir);
+                lookDir = Vector3.Cross(lookDir, up);
+                m_desiredRotation = Quaternion.LookRotation(lookDir, up);
+                Debug.DrawRay(m_desiredPosition, up, Color.red, 5.0f);
+
+                m_moveTimer += m_actualMoveTime;
             }
         }
         else
         {
-            transform.rotation = Quaternion.RotateTowards(transform.rotation, m_desiredRotation, Time.deltaTime * m_turnSpeed);
             m_moveTimer -= Time.deltaTime;
-            float t = 1.0f - (m_moveTimer / m_movementTime);
+            float t = 1.0f - (m_moveTimer / m_actualMoveTime);
             transform.position = Vector3.Lerp(m_startPosition, m_desiredPosition, t);
         }
-        
+
+        transform.rotation = Quaternion.RotateTowards(transform.rotation, m_desiredRotation, Time.deltaTime * m_turnSpeed);
     }
 
-    public void UpdateGroundCell()
+    public void DiscoverGroundCell()
     {
-        m_groundCell = GetCell(transform.position - transform.up);
+        SetGroundCell(GetCell(transform.position + m_gravity));
+    }
+
+    public void SetGroundCell(LevelCell cell)
+    {
+        m_groundCell = cell;
         if (m_groundCell != null)
         {
             transform.parent = m_groundCell.transform;
@@ -109,30 +145,43 @@ public class BaseActor : MonoBehaviour {
         m_path.Clear();
     }
 
-    public IEnumerator CalculatePath(Vector3 destWorldPos)
+    protected IEnumerator CalculatePath(Vector3 destWorldPos)
     {
         ClearPath();
+        m_pathReady = false;
 
-        int startIndex = GetCellIndex(transform.position);
         int destIndex = GetCellIndex(destWorldPos);
+        int startIndex;
+        if (m_groundCell != null && m_groundCell.m_data.m_type == LevelCellType.Ramp)
+        {
+            startIndex = GetCellIndex(m_groundCell);
+        }
+        else
+        {
+            startIndex = GetCellIndex(transform.position);
+        }
+
         if (startIndex == destIndex)
         {
             yield break;
         }
-
+        Debug.Log("pathfinding started");
         //Debug.LogFormat("Pathing to {0}", destWorldPos);
         HashSet<int> closedSet = new HashSet<int>();
         HashSet<int> openSet = new HashSet<int>();
         Dictionary<int, int> cameFrom = new Dictionary<int, int>();
         Dictionary<int, float> gScores = new Dictionary<int, float>();
         Dictionary<int, float> fScores = new Dictionary<int, float>();
+        Dictionary<int, Vector3> gravities = new Dictionary<int, Vector3>();
 
         int currIndex = startIndex;
+        Vector3 currPos = GetCellWorldPosition(currIndex);
+        Vector3 currGravity = m_gravity;
+
+        gravities[currIndex] = currGravity;
         gScores[currIndex] = 0;
         fScores[currIndex] = Vector3.SqrMagnitude(destWorldPos - transform.position);
         openSet.Add(currIndex);
-        Vector3 currPos = transform.position;
-        Vector3 currGravity = -transform.up;
 
         while (openSet.Count > 0)
         {
@@ -156,21 +205,28 @@ public class BaseActor : MonoBehaviour {
 
             if(currIndex == destIndex)
             {
+                m_pathGravities = gravities;
                 // Reach dest! build the path
-                while(currIndex != startIndex)
+                while (currIndex != startIndex)
                 {
+                    if (Input.GetKey(KeyCode.Escape))
+                    {
+                        break;
+                    }
                     m_path.Push(currIndex);
                     Debug.DrawLine(GetCellWorldPosition(currIndex), GetCellWorldPosition(cameFrom[currIndex]), Color.green, 2.0f);
                     currIndex = cameFrom[currIndex];
+                    yield return new WaitForEndOfFrame();
                 }
-                
+                m_pathReady = true;
                 yield break;
             }
 
             currPos = GetCellWorldPosition(currIndex);
+            currGravity = gravities[currIndex];
             closedSet.Add(currIndex);
 
-            List<int> possibleMoves = GetPossibleMoves(currPos, currGravity, closedSet);
+            List<int> possibleMoves = GetPossibleMoves(currPos, currGravity, closedSet, gravities);
             for(int i = 0, n = possibleMoves.Count; i < n; ++i)
             {
                 int moveIndex = possibleMoves[i];
@@ -192,87 +248,93 @@ public class BaseActor : MonoBehaviour {
             yield return new WaitForEndOfFrame();
         }
     }
-
-    public int GetBestMove(List<int> possibleMoves, Vector3 dest)
-    {
-        float best = float.MaxValue;
-        int bestMove = -1;
-        for(int i = 0, n = possibleMoves.Count; i < n; ++i)
-        {
-            int index = possibleMoves[i];
-            LevelCell cell = GetCell(index);
-            if(cell == null || cell.gameObject.layer != 0)
-            {
-                Vector3 pos = GetCellWorldPosition(possibleMoves[i]);
-                float dist = Vector3.SqrMagnitude(dest - pos);
-                if (dist < best)
-                {
-                    best = dist;
-                    bestMove = index;
-                }
-            }
-            else
-            {
-                // handle ramp case
-            }
-        }
-        return bestMove;
-    }
     
-    public List<int> GetPossibleMoves(Vector3 worldPos, Vector3 gravityDir, HashSet<int> visited)
+    protected List<int> GetPossibleMoves(Vector3 worldPos, Vector3 gravityDir, HashSet<int> visited, Dictionary<int, Vector3> gravities)
     {
-        Vector3[] dirs;
-        if(gravityDir.x != 0)
+        List<int> possibleMoves = new List<int>();
+
+        LevelCell currentCell = GetCell(worldPos);
+        if(currentCell != null && currentCell.m_data.m_type == LevelCellType.Ramp)
         {
-            dirs = kRightAxisMovement;
-        }
-        else if (gravityDir.y != 0)
-        {
-            dirs = kUpAxisMovement;
+            AddPossibleMove(possibleMoves, worldPos, -currentCell.transform.forward, -currentCell.transform.up, visited, gravities);
+            AddPossibleMove(possibleMoves, worldPos, currentCell.transform.up, currentCell.transform.forward, visited, gravities);
+            AddPossibleMove(possibleMoves, worldPos, -currentCell.transform.forward - currentCell.transform.up, gravityDir, visited, gravities);
+            AddPossibleMove(possibleMoves, worldPos, currentCell.transform.up + currentCell.transform.forward, gravityDir, visited, gravities);
         }
         else
         {
-            dirs = kForwardAxisMovement;
-        }
-
-        List<int> possibleMoves = new List<int>();
-        for(int i = 0; i < 4; ++i)
-        {
-            Vector3 dir = dirs[i];
-            Vector3 checkPos = worldPos + dir;
-            int index = GetCellIndex(checkPos);
-            if(visited.Contains(index))
+            Vector3[] dirs;
+            if (Mathf.Abs(gravityDir.x) > 0.5f)
             {
-                continue;
+                dirs = kRightAxisMovement;
+            }
+            else if (Mathf.Abs(gravityDir.y) > 0.5f)
+            {
+                dirs = kUpAxisMovement;
+            }
+            else
+            {
+                dirs = kForwardAxisMovement;
             }
 
-            LevelCell cell = GetCell(checkPos);
-            if (cell != null)
+            for (int i = 0; i < 4; ++i)
             {
-                switch (cell.m_data.m_type)
-                {
-                    case LevelCellType.Solid:
-                        continue;
-                    case LevelCellType.Ramp:
-                        // determine if we can move up on the ramp from here
-                        break;
-                }
-            }
-
-            LevelCell below = GetCell(checkPos + gravityDir);
-            if(below != null)
-            {
-                if (below.m_data.m_type == LevelCellType.Solid)
-                {
-                    possibleMoves.Add(index);
-                }
-                else if (below.m_data.m_type == LevelCellType.Ramp)
-                {
-                    // determine if we can move down on the ramp
-                }
+                Vector3 dir = dirs[i];
+                AddPossibleMove(possibleMoves, worldPos, dir, gravityDir, visited, gravities);
             }
         }
 
         return possibleMoves;
+    }
+
+    protected void AddPossibleMove(List<int> possibleMoves, Vector3 worldPos, Vector3 dir, Vector3 gravityDir, HashSet<int> visited, Dictionary<int, Vector3> gravities)
+    {
+        Vector3 checkPos = worldPos + dir;
+        int index = GetCellIndex(checkPos);
+        if (visited.Contains(index))
+        {
+            return;
+        }
+
+        LevelCell cell = GetCell(checkPos);
+        if (cell != null)
+        {
+            switch (cell.m_data.m_type)
+            {
+                case LevelCellType.Solid:
+                    return;
+                case LevelCellType.Ramp:
+                    // determine if we can move up on the ramp from here
+                    if (Vector3.Dot(dir, cell.transform.up) < -0.5f || Vector3.Dot(dir, -cell.transform.forward) < -0.5f)
+                    {
+                        gravities[index] = -Vector3.Lerp(cell.transform.up, -cell.transform.forward, 0.5f).normalized;
+                        possibleMoves.Add(index);
+                    }
+                    return;
+            }
+        }
+
+        LevelCell below = GetCell(checkPos + gravityDir);
+        if (below != null)
+        {
+            if (below.m_data.m_type == LevelCellType.Solid)
+            {
+                gravities[index] = gravityDir;
+                possibleMoves.Add(index);
+            }
+            else if (below.m_data.m_type == LevelCellType.Ramp)
+            {
+                index = GetCellIndex(below);
+                if(!visited.Contains(index))
+                {
+                    // determine if we can move up on the ramp from here
+                    if (Vector3.Dot(dir, below.transform.up) > 0.5f || Vector3.Dot(dir, -below.transform.forward) > 0.5f)
+                    {
+                        gravities[index] = -Vector3.Lerp(below.transform.up, -below.transform.forward, 0.5f).normalized;
+                        possibleMoves.Add(index);
+                    }
+                }                
+            }
+        }
     }
 }
