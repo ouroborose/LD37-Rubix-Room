@@ -138,16 +138,13 @@ public class Game : MonoBehaviour
             if (Physics.Raycast(ray, out hit, float.MaxValue, LayerUtils.kDefaultCameraLayerMask))
             {
                 LevelCell cell = hit.collider.GetComponent<LevelCell>();
-                if(Input.GetKey(KeyCode.LeftShift))
+                if(cell != null && cell.m_data.m_type == LevelCellType.Handle)
                 {
-                    if (cell != m_selectedCell)
-                    {
-                        Select(cell);
+                    Select(cell);
 
-                        m_rotationHitNormal = hit.normal;
-                        m_rotationMouseStart = Input.mousePosition;
-                        m_rotationStarted = false;
-                    }
+                    m_rotationHitNormal = hit.normal;
+                    m_rotationMouseStart = Input.mousePosition;
+                    m_rotationStarted = false;
                 }
                 else
                 {
@@ -177,14 +174,15 @@ public class Game : MonoBehaviour
                         m_rotater.transform.SetParent(transform);
                         m_rotater.transform.position = LevelManager.Instance.m_activeLevel.GetCenterWorldPosition();
                         m_rotater.transform.rotation = Quaternion.identity;
-
+                        /*
                         Ray startRay = Camera.main.ScreenPointToRay(m_rotationMouseStart);
                         Ray currRay = Camera.main.ScreenPointToRay(Input.mousePosition);
 
                         Vector3 deltaDir = currRay.GetPoint(10.0f) - startRay.GetPoint(10.0f);
                         deltaDir.Normalize();
                         m_rotationAxis = GetRotationAxis(Vector3.Cross(Camera.main.transform.forward, deltaDir));
-
+                        */
+                        m_rotationAxis = GetRotationAxis(m_selectedCell.transform.forward);
                         if (m_rotationAxis == Vector3.up)
                         {
                             m_rotationGroup = m_selectedYLayer;
@@ -241,7 +239,11 @@ public class Game : MonoBehaviour
                     rotatedCells.ResetColor();
                     LevelManager.Instance.m_activeLevel.UpdateCells(rotatedCells);
                     Destroy(m_rotater);
+
+                    m_player.m_desiredPosition = m_player.transform.position;
+                    m_player.m_desiredRotation = m_player.transform.rotation;
                     m_player.m_gravity = -m_player.transform.up;
+
                     m_isAutoCompleting = false;
                 });
                 ClearSelection();

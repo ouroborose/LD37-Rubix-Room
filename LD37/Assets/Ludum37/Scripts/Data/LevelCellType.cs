@@ -5,5 +5,6 @@
     Ramp,
     PlayerStart,
     Goal,
+    Handle,
     NumTypes
 }
