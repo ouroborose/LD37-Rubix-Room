@@ -9,7 +9,7 @@ public class LevelManager : MonoBehaviour {
     public LevelDataHolder[] m_levelDatas;
     public LevelPalette[] m_levelPalettes;
 
-    public int m_currentLevel = 0;
+    public int m_currentLevelIndex = 0;
     public Level m_activeLevel;
 
     protected void Awake()
@@ -22,10 +22,10 @@ public class LevelManager : MonoBehaviour {
         }
 
         // create first level
-        if (m_currentLevel < m_levelDatas.Length)
+        if (m_currentLevelIndex < m_levelDatas.Length)
         {
             m_activeLevel = new Level();
-            LevelData data = m_levelDatas[m_currentLevel].m_data;
+            LevelData data = m_levelDatas[m_currentLevelIndex].m_data;
             m_activeLevel.Init(data, m_levelPalettes[data.m_paletteIndex]);
             m_activeLevel.GenerateMissingCells();
         }
@@ -52,25 +52,25 @@ public class LevelManager : MonoBehaviour {
     [ContextMenu("Transition to previous level")]
     public void TransitionToPreviousLevel()
     {
-        m_currentLevel = m_currentLevel - 1;
-        if(m_currentLevel < 0)
+        m_currentLevelIndex = m_currentLevelIndex - 1;
+        if(m_currentLevelIndex < 0)
         {
-            m_currentLevel += m_levelDatas.Length;
+            m_currentLevelIndex += m_levelDatas.Length;
         }
-        TransitionTo(m_levelDatas[m_currentLevel].m_data);
+        TransitionTo(m_levelDatas[m_currentLevelIndex].m_data);
     }
 
     [ContextMenu("Transition to next level")]
     public void TransitionToNextLevel()
     {
-        m_currentLevel = (m_currentLevel + 1) % m_levelDatas.Length;
-        TransitionTo(m_levelDatas[m_currentLevel].m_data);
+        m_currentLevelIndex = (m_currentLevelIndex + 1) % m_levelDatas.Length;
+        TransitionTo(m_levelDatas[m_currentLevelIndex].m_data);
     }
 
     [ContextMenu("Reset current level")]
     public void ResetCurrentLevel()
     {
-        TransitionTo(m_levelDatas[m_currentLevel].m_data);
+        TransitionTo(m_levelDatas[m_currentLevelIndex].m_data);
     }
 
     public void TransitionTo(LevelData data)

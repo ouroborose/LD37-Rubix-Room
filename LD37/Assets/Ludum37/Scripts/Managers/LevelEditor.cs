@@ -35,11 +35,13 @@ public class LevelEditor : MonoBehaviour {
 
     public void OnEnable()
     {
+        Camera.main.cullingMask = LayerUtils.kLevelEditorCameraLayerMask;
         m_previewer.gameObject.SetActive(true);
     }
 
     public void OnDisable()
     {
+        Camera.main.cullingMask = LayerUtils.kDefaultCameraLayerMask;
         m_previewer.gameObject.SetActive(false);
         ClearCommandStacks();
     }
@@ -178,9 +180,9 @@ public class LevelEditor : MonoBehaviour {
         }
 
         Debug.Log("Saving");
-        string path = EditorUtility.SaveFilePanelInProject("Saving level", "NewLevelData", "asset", "Please enter a name");
+        string path = EditorUtility.SaveFilePanelInProject("Saving level", "NewLevelData", "asset", "Please enter a name", "Assets/Ludum37/ReferencedResources/Data/LevelData");
 
-        if(path.Length <= 0)
+        if (path.Length <= 0)
         {
             Debug.Log("Save canceled");
             return;

@@ -108,7 +108,20 @@ public class Level {
 
     public int GetCellIndex(LevelCell cell)
     {
-        return m_data.GetCellIndex(cell.m_data.m_x, cell.m_data.m_y, cell.m_data.m_z);
+        return GetCellIndex(cell.m_data.m_x, cell.m_data.m_y, cell.m_data.m_z);
+    }
+
+    public int GetCellIndex(Vector3 worldPos)
+    {
+        int x = Mathf.RoundToInt(worldPos.x / m_palette.m_spacingSize);
+        int y = Mathf.RoundToInt(worldPos.y / m_palette.m_spacingSize);
+        int z = Mathf.RoundToInt(worldPos.z / m_palette.m_spacingSize);
+        return GetCellIndex(x, y, z);
+    }
+
+    public int GetCellIndex(int x, int y, int z)
+    {
+        return m_data.GetCellIndex(x, y, z);
     }
 
     public LevelCellData CreateCellData(Vector3 worldPos, LevelCellType type, RotationId rotationId = RotationId.Up)
@@ -153,10 +166,23 @@ public class Level {
         }
     }
 
+    public LevelCell GetCell(Vector3 worldPos)
+    {
+        int x = Mathf.RoundToInt(worldPos.x / m_palette.m_spacingSize);
+        int y = Mathf.RoundToInt(worldPos.y / m_palette.m_spacingSize);
+        int z = Mathf.RoundToInt(worldPos.z / m_palette.m_spacingSize);
+        return GetCell(x, y, z);
+    }
+
     public LevelCell GetCell(int x, int y, int z)
     {
+        return GetCell(m_data.GetCellIndex(x, y, z));
+    }
+
+    public LevelCell GetCell(int index)
+    {
         LevelCell cell;
-        if (m_levelCells.TryGetValue(m_data.GetCellIndex(x, y, z), out cell))
+        if (m_levelCells.TryGetValue(index, out cell))
         {
             return cell;
         }
@@ -177,6 +203,15 @@ public class Level {
         return new Vector3(x,y,z) * m_palette.m_spacingSize;
     }
     
+    public Vector3 GetCellWorldPosition(int index)
+    {
+        int zFilter = m_data.m_height * m_data.m_width;
+        int z = index / zFilter;
+        int y = index % zFilter / m_data.m_height;
+        int x = index % m_data.m_width;
+        return new Vector3(x, y, z) * m_palette.m_spacingSize;
+    }
+
     public Vector3 GetCenterWorldPosition()
     {
         return GetCellWorldPosition(m_data.m_width - 1, m_data.m_height - 1, m_data.m_depth - 1) * 0.5f;

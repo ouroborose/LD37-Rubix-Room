@@ -28,10 +28,12 @@ public class Game : MonoBehaviour
         Vector3.forward,
     };
 
-    public float m_moveSpeed = 1.0f;
+    public Player m_player;
 
-    public float m_xLookSensitivity = 10.0f;
-    public float m_yLookSensitivity = 10.0f;
+    public float m_cameraMoveSpeed = 1.0f;
+
+    public float m_xCameraLookSensitivity = 10.0f;
+    public float m_yCameraLookSensitivity = 10.0f;
 
     public float m_autoCompleteSpeed = 0.25f;
     public LeanTweenType m_autoCompleteEase = LeanTweenType.easeOutSine;
@@ -85,7 +87,7 @@ public class Game : MonoBehaviour
             }
             else if(LevelEditor.Instance == null || !LevelEditor.Instance.enabled)
             {
-                HandleRotationControls();
+                HandlePlayerControls();
             }
         }
     }
@@ -109,7 +111,7 @@ public class Game : MonoBehaviour
             moveDir.y -= 1;
         }
 
-        Vector3 newPos = Camera.main.transform.position + Camera.main.transform.TransformDirection(moveDir) * m_moveSpeed * Time.deltaTime;
+        Vector3 newPos = Camera.main.transform.position + Camera.main.transform.TransformDirection(moveDir) * m_cameraMoveSpeed * Time.deltaTime;
         Bounds bounds = LevelManager.Instance.m_activeLevel.m_worldBounds;
         newPos.x = Mathf.Clamp(newPos.x, bounds.min.x, bounds.max.x);
         newPos.y = Mathf.Clamp(newPos.y, bounds.min.y, bounds.max.y);
@@ -120,29 +122,37 @@ public class Game : MonoBehaviour
         {
             Vector3 delta = Input.mousePosition - m_lastMousePos;
             
-            m_cameraEulers.y += -delta.x * m_xLookSensitivity * Time.deltaTime;
-            m_cameraEulers.x += delta.y * m_yLookSensitivity * Time.deltaTime;
+            m_cameraEulers.y += -delta.x * m_xCameraLookSensitivity * Time.deltaTime;
+            m_cameraEulers.x += delta.y * m_yCameraLookSensitivity * Time.deltaTime;
             m_cameraEulers.x = Mathf.Clamp(m_cameraEulers.x, -89, 89);
             Camera.main.transform.eulerAngles = m_cameraEulers;
         }
     }
 
-    public void HandleRotationControls()
+    public void HandlePlayerControls()
     {
         if (Input.GetMouseButtonDown(0))
         {
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
-            if (Physics.Raycast(ray, out hit))
+            if (Physics.Raycast(ray, out hit, float.MaxValue, LayerUtils.kDefaultCameraLayerMask))
             {
                 LevelCell cell = hit.collider.GetComponent<LevelCell>();
-                if (cell != m_selectedCell)
+                if(Input.GetKey(KeyCode.LeftShift))
                 {
-                    Select(cell);
+                    if (cell != m_selectedCell)
+                    {
+                        Select(cell);
 
-                    m_rotationHitNormal = hit.normal;
-                    m_rotationMouseStart = Input.mousePosition;
-                    m_rotationStarted = false;
+                        m_rotationHitNormal = hit.normal;
+                        m_rotationMouseStart = Input.mousePosition;
+                        m_rotationStarted = false;
+                    }
+                }
+                else
+                {
+                    Vector3 destPos = hit.point + hit.normal * LevelManager.Instance.m_activeLevel.m_palette.m_spacingSize * 0.5f;
+                    m_player.PathTo(destPos);
                 }
             }
         }
@@ -153,7 +163,7 @@ public class Game : MonoBehaviour
                 if (!m_rotationStarted)
                 {
                     Vector3 deltaMouse = Input.mousePosition - m_rotationMouseStart;
-                    if (deltaMouse.sqrMagnitude > 25)
+                    if (deltaMouse.sqrMagnitude > 50)
                     {
 
                         m_rotater = new GameObject("Rotater");
@@ -163,13 +173,10 @@ public class Game : MonoBehaviour
 
                         Ray startRay = Camera.main.ScreenPointToRay(m_rotationMouseStart);
                         Ray currRay = Camera.main.ScreenPointToRay(Input.mousePosition);
-                        RaycastHit startHit, currHit;
-                        if (Physics.Raycast(startRay, out startHit) && Physics.Raycast(currRay, out currHit))
-                        {
-                            Vector3 deltaDir = currHit.point - startHit.point;
-                            deltaDir.Normalize();
-                            m_rotationAxis = GetRotationAxis(Vector3.Cross(startHit.normal, deltaDir));
-                        }
+
+                        Vector3 deltaDir = currRay.GetPoint(10.0f) - startRay.GetPoint(10.0f);
+                        deltaDir.Normalize();
+                        m_rotationAxis = GetRotationAxis(Vector3.Cross(Camera.main.transform.forward, deltaDir));
 
                         if (m_rotationAxis == Vector3.up)
                         {
@@ -226,8 +233,8 @@ public class Game : MonoBehaviour
                     m_isAutoCompleting = false;
                 });
                 ClearSelection();
+                m_rotationStarted = false;
             }
-            m_rotationStarted = false;
         }
     }
 
