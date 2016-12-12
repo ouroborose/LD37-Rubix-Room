@@ -13,6 +13,7 @@ public class Player : BaseActor {
         LevelCell cell = GetCell(transform.position);
         if(cell != null && cell.m_data.m_type == LevelCellType.Goal)
         {
+            cell.Hide();
             LevelManager.Instance.TransitionToNextLevel();
         }
     }

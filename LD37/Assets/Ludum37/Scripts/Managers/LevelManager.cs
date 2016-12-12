@@ -118,8 +118,7 @@ public class LevelManager : MonoBehaviour {
                 LevelCellData newCellData = data.GetCellData(cell.m_data.m_x, cell.m_data.m_y, cell.m_data.m_z);
                 if (cell.m_data.m_type != newCellData.m_type)
                 {
-                    cell.m_isMarkedForDeletion = true;
-                    cell.Hide(LevelCell.kTransitionTime * 0.5f * (m_activeLevel.m_data.m_height - cell.m_data.m_y));
+                    cell.Remove(LevelCell.kTransitionTime * 0.5f * (m_activeLevel.m_data.m_height - cell.m_data.m_y));
                 }
                 else
                 {
@@ -128,8 +127,7 @@ public class LevelManager : MonoBehaviour {
             }
             else
             {
-                cell.m_isMarkedForDeletion = true;
-                cell.Hide(LevelCell.kTransitionTime * 0.5f * (m_activeLevel.m_data.m_height - cell.m_data.m_y));
+                cell.Remove(LevelCell.kTransitionTime * 0.5f * (m_activeLevel.m_data.m_height - cell.m_data.m_y));
             }
         }
         

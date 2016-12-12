@@ -68,18 +68,40 @@ public class LevelCell : MonoBehaviour {
 
     public void Show(float delay = 0.0f)
     {
+        if (m_isMarkedForDeletion)
+        {
+            return;
+        }
         gameObject.SetActive(true);
         LeanTween.value(0.0f, 1.0f, kTransitionTime).setDelay(delay).setEase(kTransitionInEaseType).setOnUpdate(OnTransitionUpdate);
     }
 
     public void Hide(float delay = 0.0f)
     {
+        if (m_isMarkedForDeletion)
+        {
+            return;
+        }
         LeanTween.value(1.0f, 0.0f, kTransitionTime).setDelay(delay).setEase(kTransitionOutEaseType).setOnUpdate(OnTransitionUpdate).setOnComplete(OnHideComplete);
+    }
+
+    public void Remove(float delay = 0.0f)
+    {
+        if(m_isMarkedForDeletion)
+        {
+            return;
+        }
+
+        m_isMarkedForDeletion = true;
+        Hide(delay);
     }
 
     public void OnTransitionUpdate(float t)
     {
-        transform.localScale = m_originalScale * t;
+        if(transform != null)
+        {
+            transform.localScale = m_originalScale * t;
+        }
     }
 
     public void OnHideComplete()

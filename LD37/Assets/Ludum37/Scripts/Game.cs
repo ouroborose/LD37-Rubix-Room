@@ -29,6 +29,7 @@ public class Game : MonoBehaviour
     };
 
     public Player m_player;
+    public Color m_rotationHighlightColor = Color.green;
 
     public float m_cameraMoveSpeed = 1.0f;
 
@@ -48,7 +49,6 @@ public class Game : MonoBehaviour
     protected GameObject m_rotater;
 
     protected Vector3 m_rotationMouseStart;
-    protected Vector3 m_rotationHitNormal;
 
     protected bool m_rotationStarted = false;
     protected Level.CellGroup m_rotationGroup;
@@ -138,12 +138,27 @@ public class Game : MonoBehaviour
             if (Physics.Raycast(ray, out hit, float.MaxValue, LayerUtils.kDefaultCameraLayerMask))
             {
                 LevelCell cell = hit.collider.GetComponent<LevelCell>();
-                if(cell != null && cell.m_data.m_type == LevelCellType.Handle)
+                if(cell != null && cell.m_data.m_type == LevelCellType.Handle && Vector3.Dot(hit.normal, cell.transform.up) > 0.5f)
                 {
                     Select(cell);
-
-                    m_rotationHitNormal = hit.normal;
+                    
                     m_rotationMouseStart = Input.mousePosition;
+
+                    m_rotationAxis = GetRotationAxis(m_selectedCell.transform.forward);
+                    if (m_rotationAxis == Vector3.up)
+                    {
+                        m_rotationGroup = m_selectedYLayer;
+                    }
+                    else if (m_rotationAxis == Vector3.right)
+                    {
+                        m_rotationGroup = m_selectedXLayer;
+                    }
+                    else
+                    {
+                        m_rotationGroup = m_selectedZLayer;
+                    }
+
+                    m_rotationGroup.SetColor(m_rotationHighlightColor);
                     m_rotationStarted = false;
                 }
                 else
@@ -176,35 +191,13 @@ public class Game : MonoBehaviour
                         m_rotater.transform.SetParent(transform);
                         m_rotater.transform.position = LevelManager.Instance.m_activeLevel.GetCenterWorldPosition();
                         m_rotater.transform.rotation = Quaternion.identity;
-                        /*
-                        Ray startRay = Camera.main.ScreenPointToRay(m_rotationMouseStart);
-                        Ray currRay = Camera.main.ScreenPointToRay(Input.mousePosition);
 
-                        Vector3 deltaDir = currRay.GetPoint(10.0f) - startRay.GetPoint(10.0f);
-                        deltaDir.Normalize();
-                        m_rotationAxis = GetRotationAxis(Vector3.Cross(Camera.main.transform.forward, deltaDir));
-                        */
-                        m_rotationAxis = GetRotationAxis(m_selectedCell.transform.forward);
-                        if (m_rotationAxis == Vector3.up)
-                        {
-                            m_rotationGroup = m_selectedYLayer;
-                        }
-                        else if (m_rotationAxis == Vector3.right)
-                        {
-                            m_rotationGroup = m_selectedXLayer;
-                        }
-                        else
-                        {
-                            m_rotationGroup = m_selectedZLayer;
-                        }
-
-                        m_rotationGroup.SetColor(Color.green);
                         m_rotationGroup.SetParent(m_rotater.transform);
+
                         if(m_player.m_isMoving)
                         {
                             m_player.Stop();
                         }
-
                         m_rotationStarted = true;
                     }
                 }
@@ -230,10 +223,16 @@ public class Game : MonoBehaviour
             if (m_selectedCell != null && m_rotationStarted)
             {
                 GameObject rotater = m_rotater;
+                Quaternion startRotation = rotater.transform.rotation;
+                Quaternion finalRotation = GetClosestValidRotation(startRotation);
                 Level.CellGroup rotatedCells = new Level.CellGroup();
                 rotatedCells.AddRange(m_rotationGroup);
                 m_isAutoCompleting = true;
-                LeanTween.rotate(rotater, GetClosestValidRotation(rotater.transform.rotation).eulerAngles, m_autoCompleteSpeed).setEase(m_autoCompleteEase).setOnComplete(() =>
+                LeanTween.value(0.0f, 1.0f, m_autoCompleteSpeed).setEase(m_autoCompleteEase).setOnUpdate((float t) =>
+                {
+                    rotater.transform.rotation = Quaternion.Slerp(startRotation, finalRotation, t);
+                    rotatedCells.SetColor(Color.Lerp(m_rotationHighlightColor, Color.white, t));
+                }).setOnComplete(() =>
                 {
                     rotatedCells.SetParent(LevelManager.Instance.transform);
                     rotatedCells.ResetColor();
