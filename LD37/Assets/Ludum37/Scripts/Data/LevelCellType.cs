@@ -3,5 +3,7 @@
     Empty = 0,
     Solid,
     Ramp,
+    PlayerStart,
+    Goal,
     NumTypes
 }

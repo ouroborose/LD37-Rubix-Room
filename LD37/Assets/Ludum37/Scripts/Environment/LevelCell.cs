@@ -9,6 +9,7 @@ public class LevelCell : MonoBehaviour {
 
     public LevelCellData m_data;
 
+    [HideInInspector]
     public bool m_isMarkedForDeletion = false;
 
     protected Vector3 m_originalScale;

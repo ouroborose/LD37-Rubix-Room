@@ -4,7 +4,10 @@ using UnityEngine;
 
 public class Game : MonoBehaviour
 {
-    public readonly Quaternion[] kValidRotations =
+    protected static Game s_instance;
+    public static Game Instance { get { return s_instance; } }
+
+    public readonly static Quaternion[] kValidRotations =
     {
         //Quaternion.identity,
         Quaternion.Euler(90,0,0),
@@ -18,7 +21,7 @@ public class Game : MonoBehaviour
         Quaternion.Euler(0,0,270),
     };
 
-    public readonly Vector3[] kRotationAxes =
+    public readonly static Vector3[] kRotationAxes =
     {
         Vector3.up,
         Vector3.right,
@@ -54,9 +57,15 @@ public class Game : MonoBehaviour
 
     protected Vector3 m_lastMousePos;
 
+    protected void Awake()
+    {
+        s_instance = this;
+    }
+
     protected void Start()
     {
-        Camera.main.transform.position = LevelManager.Instance.m_activeLevel.GetCenterWorldPosition();
+        //Camera.main.transform.position = LevelManager.Instance.m_activeLevel.GetCenterWorldPosition();
+        m_cameraEulers = Camera.main.transform.eulerAngles;
         m_lastMousePos = Input.mousePosition;
     }
 
@@ -116,11 +125,6 @@ public class Game : MonoBehaviour
             m_cameraEulers.x = Mathf.Clamp(m_cameraEulers.x, -89, 89);
             Camera.main.transform.eulerAngles = m_cameraEulers;
         }
-    }
-
-    public void HandleEditorControls()
-    {
-
     }
 
     public void HandleRotationControls()

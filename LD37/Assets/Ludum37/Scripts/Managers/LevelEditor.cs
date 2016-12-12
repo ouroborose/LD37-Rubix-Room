@@ -10,7 +10,9 @@ using System.Runtime.Serialization.Formatters.Binary;
 public class LevelEditor : MonoBehaviour {
     private static LevelEditor s_instance;
     public static LevelEditor Instance { get { return s_instance; } }
-    
+
+    public Transform m_previewer;
+
     protected LevelCellType m_currentType = LevelCellType.Solid;
 
     protected List<Rect> m_buttonRects;
@@ -22,15 +24,23 @@ public class LevelEditor : MonoBehaviour {
     {
         s_instance = this;
 
+        m_previewer.gameObject.SetActive(false);
+
         m_buttonRects = new List<Rect>();
         for (int i = 0, n = (int)LevelCellType.NumTypes; i < n; ++i)
         {
-            m_buttonRects.Add(new Rect(10, 10 + i * 60, 50, 50));
+            m_buttonRects.Add(new Rect(10, 10 + i * 60, 75, 50));
         }
+    }
+
+    public void OnEnable()
+    {
+        m_previewer.gameObject.SetActive(true);
     }
 
     public void OnDisable()
     {
+        m_previewer.gameObject.SetActive(false);
         ClearCommandStacks();
     }
     
@@ -65,12 +75,14 @@ public class LevelEditor : MonoBehaviour {
                 return;
             }
         }
-
-        if(Input.GetMouseButtonDown(0))
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        RaycastHit hit;
+        if (Physics.Raycast(ray, out hit))
         {
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            RaycastHit hit;
-            if(Physics.Raycast(ray, out hit))
+            Vector3 pos = hit.point + hit.normal * LevelManager.Instance.m_activeLevel.m_palette.m_spacingSize * 0.5f;
+            m_previewer.position = LevelManager.Instance.m_activeLevel.GetCellWorldPosition(pos);
+
+            if (Input.GetMouseButtonDown(0))
             {
                 if(m_currentType == LevelCellType.Empty)
                 {
@@ -90,37 +102,35 @@ public class LevelEditor : MonoBehaviour {
                 else
                 {
                     // add cell
-                    Vector3 pos = hit.point + hit.normal * LevelManager.Instance.m_activeLevel.m_palette.m_spacingSize * 0.5f;
-                    ExecuteCommand(new CreateCommand(pos, m_currentType, RotationUtil.GetClosestId(Quaternion.LookRotation(-hit.normal))));
+                    int rotationId = (int)RotationUtil.GetClosestId(Quaternion.LookRotation(Vector3.Cross(Camera.main.transform.forward, hit.normal), hit.normal));
+                    rotationId /= 4;
+                    rotationId *= 4;
+                    ExecuteCommand(new CreateCommand(pos, m_currentType, (RotationId)rotationId));
                 }
             }
-        }
-        /*
-        else if(Input.GetMouseButtonDown(1))
-        {
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            RaycastHit hit;
-            if (Physics.Raycast(ray, out hit))
+            /*
+            else if(Input.GetMouseButtonDown(1))
             {
-                // rotate
-                LevelCell cell = hit.collider.GetComponent<LevelCell>();
-                if (cell.m_data.m_type != LevelCellType.Solid)
+                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                RaycastHit hit;
+                if (Physics.Raycast(ray, out hit))
                 {
-                    ExecuteCommand(new RotateCommand(cell.m_data));
+                    // rotate
+                    LevelCell cell = hit.collider.GetComponent<LevelCell>();
+                    if (cell.m_data.m_type != LevelCellType.Solid)
+                    {
+                        ExecuteCommand(new RotateCommand(cell.m_data));
+                    }
                 }
             }
-        }
-        */
-        else if(Input.GetMouseButtonDown(2))
-        {
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            RaycastHit hit;
-            if (Physics.Raycast(ray, out hit))
+            */
+            else if(Input.GetMouseButtonDown(2))
             {
                 // delete cell
                 LevelCell cell = hit.collider.GetComponent<LevelCell>();
                 ExecuteCommand(new DeleteCommand(cell.m_data));
             }
+
         }
     }
 

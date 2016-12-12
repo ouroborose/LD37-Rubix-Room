@@ -164,9 +164,17 @@ public class Level {
         return null;
     }
 
+    public Vector3 GetCellWorldPosition(Vector3 worldPos)
+    {
+        int x = Mathf.RoundToInt(worldPos.x / m_palette.m_spacingSize);
+        int y = Mathf.RoundToInt(worldPos.y / m_palette.m_spacingSize);
+        int z = Mathf.RoundToInt(worldPos.z / m_palette.m_spacingSize);
+        return new Vector3(x, y, z) * m_palette.m_spacingSize;
+    }
+
     public Vector3 GetCellWorldPosition(int x, int y, int z)
     {
-        return new Vector3(x * m_palette.m_spacingSize, y * m_palette.m_spacingSize, z * m_palette.m_spacingSize);
+        return new Vector3(x,y,z) * m_palette.m_spacingSize;
     }
     
     public Vector3 GetCenterWorldPosition()
