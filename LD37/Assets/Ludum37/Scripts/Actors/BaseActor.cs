@@ -90,7 +90,17 @@ public class BaseActor : MonoBehaviour {
             float t = 1.0f - (m_moveTimer / m_actualMoveTime);
             transform.position = Vector3.Lerp(m_startPosition, m_desiredPosition, t);
             transform.rotation = Quaternion.Slerp(transform.rotation, m_desiredRotation, t);
+
+            if(m_moveTimer <= 0.0f && m_path.Count <= 0)
+            {
+                OnPathDestinationReached();
+            }
         }
+    }
+
+    public virtual void OnPathDestinationReached()
+    {
+
     }
 
     public void Stop()

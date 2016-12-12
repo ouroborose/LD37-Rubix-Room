@@ -41,6 +41,8 @@ public class Level {
     public List<CellGroup> m_yLayers;
     public List<CellGroup> m_zLayers;
 
+    public LevelCell m_playerStart;
+
     public void Init(LevelData data, LevelPalette palette)
     {
         m_data = data;
@@ -158,6 +160,11 @@ public class Level {
     {
         if (m_data.IsInBounds(cell.m_data.m_x, cell.m_data.m_y, cell.m_data.m_z))
         {
+            if(cell.m_data.m_type == LevelCellType.PlayerStart)
+            {
+                m_playerStart = cell;
+            }
+
             m_levelCells[GetCellIndex(cell)] = cell;
 
             m_xLayers[cell.m_data.m_x].Add(cell);

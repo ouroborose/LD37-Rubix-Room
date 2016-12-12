@@ -28,6 +28,7 @@ public class LevelManager : MonoBehaviour {
             LevelData data = m_levelDatas[m_currentLevelIndex].m_data;
             m_activeLevel.Init(data, m_levelPalettes[data.m_paletteIndex]);
             m_activeLevel.GenerateMissingCells();
+            MovePlayerToStart();
         }
     }
 
@@ -46,6 +47,25 @@ public class LevelManager : MonoBehaviour {
         if (Input.GetKeyDown(KeyCode.R))
         {
             ResetCurrentLevel();
+        }
+    }
+
+    public void MovePlayerToStart()
+    {
+        LevelCell playerStart = m_activeLevel.m_playerStart;
+        if (playerStart != null)
+        {
+            Player player = FindObjectOfType<Player>();
+            if (player != null)
+            {
+                player.transform.position = playerStart.transform.position;
+                player.transform.rotation = playerStart.transform.rotation;
+                player.DiscoverGroundCell();
+
+                player.m_desiredPosition = player.transform.position;
+                player.m_desiredRotation = player.transform.rotation;
+                player.m_gravity = -player.transform.up;
+            }
         }
     }
 
@@ -80,6 +100,8 @@ public class LevelManager : MonoBehaviour {
 
     protected IEnumerator DoTransition(LevelData data)
     {
+        Game.Instance.m_player.Stop();
+
         Level newLevel = new Level();
         newLevel.Init(data, m_levelPalettes[data.m_paletteIndex]);
 
@@ -113,6 +135,7 @@ public class LevelManager : MonoBehaviour {
         
         m_activeLevel = newLevel;
         m_activeLevel.GenerateMissingCells();
+        MovePlayerToStart();
         yield return new WaitForEndOfFrame();
     }
 }

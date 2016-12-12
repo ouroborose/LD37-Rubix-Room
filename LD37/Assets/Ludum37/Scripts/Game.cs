@@ -149,13 +149,15 @@ public class Game : MonoBehaviour
                 else
                 {
                     Vector3 destPos = hit.point;
-                    if (cell.m_data.m_type == LevelCellType.Ramp)
+                    switch(cell.m_data.m_type)
                     {
-                        destPos -= hit.normal * LevelManager.Instance.m_activeLevel.m_palette.m_spacingSize * 0.5f;
-                    }
-                    else
-                    {
-                        destPos += hit.normal * LevelManager.Instance.m_activeLevel.m_palette.m_spacingSize * 0.5f;
+                        case LevelCellType.Goal:
+                        case LevelCellType.Ramp:
+                            destPos -= hit.normal * LevelManager.Instance.m_activeLevel.m_palette.m_spacingSize * 0.5f;
+                            break;
+                        default:
+                            destPos += hit.normal * LevelManager.Instance.m_activeLevel.m_palette.m_spacingSize * 0.5f;
+                            break;
                     }
                     m_player.PathTo(destPos);
                 }
@@ -186,19 +188,17 @@ public class Game : MonoBehaviour
                         if (m_rotationAxis == Vector3.up)
                         {
                             m_rotationGroup = m_selectedYLayer;
-                            m_rotationGroup.SetColor(Color.green);
                         }
                         else if (m_rotationAxis == Vector3.right)
                         {
                             m_rotationGroup = m_selectedXLayer;
-                            m_rotationGroup.SetColor(Color.blue);
                         }
                         else
                         {
                             m_rotationGroup = m_selectedZLayer;
-                            m_rotationGroup.SetColor(Color.red);
                         }
 
+                        m_rotationGroup.SetColor(Color.green);
                         m_rotationGroup.SetParent(m_rotater.transform);
                         if(m_player.m_isMoving)
                         {

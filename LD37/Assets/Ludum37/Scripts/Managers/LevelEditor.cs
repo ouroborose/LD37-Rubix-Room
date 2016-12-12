@@ -207,6 +207,7 @@ public class LevelEditor : MonoBehaviour {
         else
         {
             levelData.m_data = LevelManager.Instance.m_activeLevel.CreateLevelData();
+            EditorUtility.SetDirty(levelData);
         }
 
         AssetDatabase.SaveAssets();
