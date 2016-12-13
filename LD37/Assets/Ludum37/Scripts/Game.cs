@@ -101,8 +101,19 @@ public class Game : MonoBehaviour
 
     public void HandleCameraControls()
     {
-        Vector3 moveDir = new Vector3(Input.GetAxis("Horizontal"), 0.0f, Input.GetAxis("Vertical"));
-        if(Input.GetKey(KeyCode.Space))
+        if(Input.GetKeyDown(KeyCode.O))
+        {
+            m_xCameraLookSensitivity *= -1;
+        }
+        if(Input.GetKeyDown(KeyCode.P))
+        {
+            m_yCameraLookSensitivity *= -1;
+        }
+
+        Vector3 forward = Vector3.ProjectOnPlane(Camera.main.transform.forward, Vector3.up);
+        forward.Normalize();
+        Vector3 moveDir = forward * Input.GetAxis("Vertical") + Camera.main.transform.right*Input.GetAxis("Horizontal");
+        if (Input.GetKey(KeyCode.Space))
         {
             moveDir.y += 1;
         }
@@ -111,7 +122,7 @@ public class Game : MonoBehaviour
             moveDir.y -= 1;
         }
 
-        Vector3 newPos = Camera.main.transform.position + Camera.main.transform.TransformDirection(moveDir) * m_cameraMoveSpeed * Time.deltaTime;
+        Vector3 newPos = Camera.main.transform.position + moveDir * m_cameraMoveSpeed * Time.deltaTime;
         Bounds bounds = LevelManager.Instance.m_activeLevel.m_worldBounds;
         newPos.x = Mathf.Clamp(newPos.x, bounds.min.x, bounds.max.x);
         newPos.y = Mathf.Clamp(newPos.y, bounds.min.y, bounds.max.y);
