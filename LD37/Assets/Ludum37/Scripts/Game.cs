@@ -80,7 +80,7 @@ public class Game : MonoBehaviour
 
         if (!m_isAutoCompleting)
         {
-            if(Input.GetKeyDown(KeyCode.F1) && !m_rotationStarted && LevelEditor.Instance != null)
+            if(Application.isEditor && Input.GetKeyDown(KeyCode.F1) && !m_rotationStarted && LevelEditor.Instance != null)
             {
                 // editor mode
                 LevelEditor.Instance.enabled = !LevelEditor.Instance.enabled;

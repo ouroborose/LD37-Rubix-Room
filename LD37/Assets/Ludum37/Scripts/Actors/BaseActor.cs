@@ -125,6 +125,10 @@ public class BaseActor : MonoBehaviour {
         {
             transform.parent = m_groundCell.transform;
         }
+        else
+        {
+            transform.parent = null;
+        }
     }
 
     public LevelCell GetCell(Vector3 worldPos)
@@ -306,8 +310,8 @@ public class BaseActor : MonoBehaviour {
         {
             AddPossibleMove(possibleMoves, worldPos, -currentCell.transform.forward, -currentCell.transform.up, visited, gravities);
             AddPossibleMove(possibleMoves, worldPos, currentCell.transform.up, currentCell.transform.forward, visited, gravities);
-            AddPossibleMove(possibleMoves, worldPos, -currentCell.transform.forward - currentCell.transform.up, gravityDir, visited, gravities);
-            AddPossibleMove(possibleMoves, worldPos, currentCell.transform.up + currentCell.transform.forward, gravityDir, visited, gravities);
+            AddPossibleMove(possibleMoves, worldPos, -currentCell.transform.forward - currentCell.transform.up, currentCell.transform.forward, visited, gravities);
+            AddPossibleMove(possibleMoves, worldPos, currentCell.transform.up + currentCell.transform.forward, -currentCell.transform.up, visited, gravities);
         }
         else
         {
@@ -355,7 +359,7 @@ public class BaseActor : MonoBehaviour {
                 case LevelCellType.Ramp:
                     // determine if we can move up on the ramp from here
                     if ((Vector3.Dot(dir, cell.transform.up) < -0.5f || Vector3.Dot(dir, -cell.transform.forward) < -0.5f) &&
-                        (Vector3.Dot(gravityDir, cell.transform.up) < -0.5f || Vector3.Dot(gravityDir, -cell.transform.forward) < -0.5f))
+                        (Vector3.Dot(gravityDir, -cell.transform.up) > 0.5f || Vector3.Dot(gravityDir, cell.transform.forward) > 0.5f))
                     {
                         gravities[index] = -Vector3.Lerp(cell.transform.up, -cell.transform.forward, 0.5f).normalized;
                         possibleMoves.Add(index);
@@ -380,7 +384,7 @@ public class BaseActor : MonoBehaviour {
                     {
                         // determine if we can move up on the ramp from here
                         if ((Vector3.Dot(dir, below.transform.up) > 0.5f || Vector3.Dot(dir, -below.transform.forward) > 0.5f) &&
-                            (Vector3.Dot(gravityDir, below.transform.up) > 0.5f || Vector3.Dot(gravityDir, -below.transform.forward) > 0.5f))
+                            (Vector3.Dot(gravityDir, -below.transform.up) > 0.5f || Vector3.Dot(gravityDir, below.transform.forward) > 0.5f))
                         {
                             gravities[index] = -Vector3.Lerp(below.transform.up, -below.transform.forward, 0.5f).normalized;
                             possibleMoves.Add(index);

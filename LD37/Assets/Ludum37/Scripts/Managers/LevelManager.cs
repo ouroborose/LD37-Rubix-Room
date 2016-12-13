@@ -34,14 +34,17 @@ public class LevelManager : MonoBehaviour {
 
     protected void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Comma))
+        if(Application.isEditor)
         {
-            TransitionToPreviousLevel();
-        }
+            if (Input.GetKeyDown(KeyCode.Comma))
+            {
+                TransitionToPreviousLevel();
+            }
 
-        if (Input.GetKeyDown(KeyCode.Period))
-        {
-            TransitionToNextLevel();
+            if (Input.GetKeyDown(KeyCode.Period))
+            {
+                TransitionToNextLevel();
+            }
         }
 
         if (Input.GetKeyDown(KeyCode.R))
@@ -102,6 +105,7 @@ public class LevelManager : MonoBehaviour {
     protected IEnumerator DoTransition(LevelData data)
     {
         Game.Instance.m_player.Stop();
+        Game.Instance.m_player.transform.parent = null;
 
         Level newLevel = new Level();
         newLevel.Init(data, m_levelPalettes[data.m_paletteIndex]);
