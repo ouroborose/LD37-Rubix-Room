@@ -152,6 +152,7 @@ public class Level {
 
         LevelCell cell = cellObj.GetComponent<LevelCell>();
         cell.Init(x, y, z);
+        cell.m_data.m_rotationId = rotationId;
         AddCell(cell);
         return cell;
     }
