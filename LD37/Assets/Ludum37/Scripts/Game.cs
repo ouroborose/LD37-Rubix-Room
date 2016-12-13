@@ -220,34 +220,45 @@ public class Game : MonoBehaviour
         }
         else if (Input.GetMouseButtonUp(0))
         {
-            if (m_selectedCell != null && m_rotationStarted)
+            if (m_selectedCell != null)
             {
-                GameObject rotater = m_rotater;
-                Quaternion startRotation = rotater.transform.rotation;
-                Quaternion finalRotation = GetClosestValidRotation(startRotation);
                 Level.CellGroup rotatedCells = new Level.CellGroup();
                 rotatedCells.AddRange(m_rotationGroup);
-                m_isAutoCompleting = true;
-                LeanTween.value(0.0f, 1.0f, m_autoCompleteSpeed).setEase(m_autoCompleteEase).setOnUpdate((float t) =>
+                if (m_rotationStarted)
                 {
-                    rotater.transform.rotation = Quaternion.Slerp(startRotation, finalRotation, t);
-                    rotatedCells.SetColor(Color.Lerp(m_rotationHighlightColor, Color.white, t));
-                }).setOnComplete(() =>
+                    GameObject rotater = m_rotater;
+                    Quaternion startRotation = rotater.transform.rotation;
+                    Quaternion finalRotation = GetClosestValidRotation(startRotation);
+                    m_isAutoCompleting = true;
+
+                    LeanTween.value(rotater.gameObject, 0.0f, 1.0f, m_autoCompleteSpeed).setEase(m_autoCompleteEase).setOnUpdate((float t) =>
+                    {
+                        rotater.transform.rotation = Quaternion.Slerp(startRotation, finalRotation, t);
+                        rotatedCells.SetColor(Color.Lerp(m_rotationHighlightColor, Color.white, t));
+                    }).setOnComplete(() =>
+                    {
+                        rotatedCells.SetParent(LevelManager.Instance.transform);
+                        rotatedCells.ResetColor();
+                        LevelManager.Instance.m_activeLevel.UpdateCells(rotatedCells);
+                        Destroy(m_rotater);
+
+                        m_player.m_desiredPosition = m_player.transform.position;
+                        m_player.m_desiredRotation = m_player.transform.rotation;
+                        m_player.m_gravity = -m_player.transform.up;
+
+                        m_isAutoCompleting = false;
+                    });
+                }
+                else
                 {
-                    rotatedCells.SetParent(LevelManager.Instance.transform);
-                    rotatedCells.ResetColor();
-                    LevelManager.Instance.m_activeLevel.UpdateCells(rotatedCells);
-                    Destroy(m_rotater);
-
-                    m_player.m_desiredPosition = m_player.transform.position;
-                    m_player.m_desiredRotation = m_player.transform.rotation;
-                    m_player.m_gravity = -m_player.transform.up;
-
-                    m_isAutoCompleting = false;
-                });
+                    LeanTween.value(0.0f, 1.0f, m_autoCompleteSpeed).setEase(m_autoCompleteEase).setOnUpdate((float t) =>
+                    {
+                        rotatedCells.SetColor(Color.Lerp(m_rotationHighlightColor, Color.white, t));
+                    });
+                }
                 ClearSelection();
-                m_rotationStarted = false;
             }
+            m_rotationStarted = false;
         }
     }
 

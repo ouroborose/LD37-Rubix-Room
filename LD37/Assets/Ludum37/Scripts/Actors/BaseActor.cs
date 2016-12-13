@@ -82,6 +82,11 @@ public class BaseActor : MonoBehaviour {
                 //Debug.DrawRay(m_desiredPosition, up, Color.red, 5.0f);
 
                 m_moveTimer += m_actualMoveTime;
+
+                if (m_path.Count <= 0)
+                {
+                    OnPathDestinationReached();
+                }
             }
         }
         else
@@ -91,10 +96,7 @@ public class BaseActor : MonoBehaviour {
             transform.position = Vector3.Lerp(m_startPosition, m_desiredPosition, t);
             transform.rotation = Quaternion.Slerp(transform.rotation, m_desiredRotation, t);
 
-            if(m_moveTimer <= 0.0f && m_path.Count <= 0)
-            {
-                OnPathDestinationReached();
-            }
+            
         }
     }
 
@@ -103,7 +105,7 @@ public class BaseActor : MonoBehaviour {
 
     }
 
-    public void Stop()
+    public virtual void Stop()
     {
         transform.position = m_desiredPosition;
         transform.rotation = m_desiredRotation;
@@ -138,6 +140,11 @@ public class BaseActor : MonoBehaviour {
     public Vector3 GetCellWorldPosition(int index)
     {
         return LevelManager.Instance.m_activeLevel.GetCellWorldPosition(index);
+    }
+
+    public Vector3 GetCellWorldPosition(Vector3 worldPos)
+    {
+        return LevelManager.Instance.m_activeLevel.GetCellWorldPosition(worldPos);
     }
 
     public int GetCellIndex(Vector3 worldPos)
