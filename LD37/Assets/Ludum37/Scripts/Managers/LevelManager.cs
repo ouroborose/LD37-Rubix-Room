@@ -60,11 +60,12 @@ public class LevelManager : MonoBehaviour {
             {
                 player.transform.position = playerStart.transform.position;
                 player.transform.rotation = playerStart.transform.rotation;
-                player.DiscoverGroundCell();
 
                 player.m_desiredPosition = player.transform.position;
                 player.m_desiredRotation = player.transform.rotation;
                 player.m_gravity = -player.transform.up;
+
+                player.DiscoverGroundCell();
             }
         }
     }
