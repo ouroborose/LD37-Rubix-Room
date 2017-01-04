@@ -59,8 +59,9 @@ public class Level {
         m_worldBounds = new Bounds(GetCenterWorldPosition(), size);
     }
 
-    public void GenerateMissingCells()
+    public float GenerateMissingCells()
     {
+        float longestDelayTime = 0.0f;
         for(int i = 0, n = m_data.m_occupiedCells.Count; i < n; ++i)
         {
             LevelCellData cellData = m_data.m_occupiedCells[i];
@@ -70,8 +71,15 @@ public class Level {
                 continue;
             }
 
-            CreateCell(cellData).Show(LevelCell.kTransitionTime * 0.5f * cellData.m_y);
+            float delayTime = LevelCell.kTransitionTime * 0.5f * cellData.m_y;
+            if(delayTime > longestDelayTime)
+            {
+                longestDelayTime = delayTime;
+            }
+            CreateCell(cellData).Show(delayTime);
         }
+
+        return longestDelayTime;
     }
 
     protected List<CellGroup> CreateNewLayers(int size)
@@ -194,16 +202,15 @@ public class Level {
         {
             return cell;
         }
-
         return null;
     }
 
     public Vector3 GetCellWorldPosition(Vector3 worldPos)
     {
-        int x = Mathf.RoundToInt(worldPos.x / m_palette.m_spacingSize);
-        int y = Mathf.RoundToInt(worldPos.y / m_palette.m_spacingSize);
-        int z = Mathf.RoundToInt(worldPos.z / m_palette.m_spacingSize);
-        return new Vector3(x, y, z) * m_palette.m_spacingSize;
+        float x = Mathf.RoundToInt(worldPos.x / m_palette.m_spacingSize) * m_palette.m_spacingSize;
+        float y = Mathf.RoundToInt(worldPos.y / m_palette.m_spacingSize) * m_palette.m_spacingSize;
+        float z = Mathf.RoundToInt(worldPos.z / m_palette.m_spacingSize) * m_palette.m_spacingSize;
+        return new Vector3(x, y, z);
     }
 
     public Vector3 GetCellWorldPosition(int x, int y, int z)

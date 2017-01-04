@@ -28,8 +28,14 @@ public class Game : MonoBehaviour
         Vector3.forward,
     };
 
+    public const float kTransitionThreshold = 25.0f;
+
     public Player m_player;
     public Color m_rotationHighlightColor = Color.green;
+
+    public bool m_isVR = true;
+    public SteamVR_PlayArea m_vrPlayArea;
+    public Transform m_vrEyesTransform;
 
     public float m_cameraMoveSpeed = 1.0f;
 
@@ -40,6 +46,7 @@ public class Game : MonoBehaviour
     public LeanTweenType m_autoCompleteEase = LeanTweenType.easeOutSine;
     
     protected LevelCell m_selectedCell;
+    public LevelCell SelectedCell { get { return m_selectedCell; } }
     protected Level.CellGroup m_selectedXLayer = new Level.CellGroup();
     protected Level.CellGroup m_selectedYLayer = new Level.CellGroup();
     protected Level.CellGroup m_selectedZLayer = new Level.CellGroup();
@@ -48,16 +55,18 @@ public class Game : MonoBehaviour
 
     protected GameObject m_rotater;
 
-    protected Vector3 m_rotationMouseStart;
-
-    protected bool m_rotationStarted = false;
     protected Level.CellGroup m_rotationGroup;
     protected Vector3 m_rotationAxis = Vector3.zero;
     protected bool m_useMouseY = false;
 
     protected bool m_isAutoCompleting = false;
 
+    protected Vector3 m_rotationMouseStart;
     protected Vector3 m_lastMousePos;
+
+    protected Vector3 m_rotationStartDirProjected;
+    protected float m_interactionDistance = 0.0f;
+
 
     protected void Awake()
     {
@@ -66,9 +75,19 @@ public class Game : MonoBehaviour
 
     protected void Start()
     {
-        //Camera.main.transform.position = LevelManager.Instance.m_activeLevel.GetCenterWorldPosition();
         m_cameraEulers = Camera.main.transform.eulerAngles;
         m_lastMousePos = Input.mousePosition;
+        
+        Vector3 center = LevelManager.Instance.m_activeLevel.GetCenterWorldPosition();
+        if(m_vrPlayArea != null)
+        {
+            center.y = 0;
+            m_vrPlayArea.transform.position = center;
+        }
+        else
+        {
+            Camera.main.transform.position = LevelManager.Instance.m_activeLevel.GetCenterWorldPosition();
+        }
     }
 
     protected void Update()
@@ -78,28 +97,52 @@ public class Game : MonoBehaviour
             return;
         }
 
-        if (!m_isAutoCompleting)
+        if (!m_isAutoCompleting && !LevelManager.Instance.m_isTransitioning)
         {
-            if(Application.isEditor && Input.GetKeyDown(KeyCode.F1) && !m_rotationStarted && LevelEditor.Instance != null)
+            if (Application.isEditor && Input.GetKeyDown(KeyCode.F1) && m_selectedCell == null && LevelEditor.Instance != null)
             {
                 // editor mode
                 LevelEditor.Instance.enabled = !LevelEditor.Instance.enabled;
             }
-            else if(LevelEditor.Instance == null || !LevelEditor.Instance.enabled)
+            else if (LevelEditor.Instance == null || !LevelEditor.Instance.enabled)
             {
-                HandlePlayerControls();
+                if (!m_isVR)
+                {
+                    HandlePlayerControls();
+                }
             }
+        }
+        
+    }
+
+    protected void LateUpdate()
+    {
+        if (m_isVR)
+        {
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                RecenterVRPlaySpace();
+            }
+        }
+        else
+        {
+            HandleCameraControls();
+
+            m_lastMousePos = Input.mousePosition;
         }
     }
 
-    public void LateUpdate()
+    public void RecenterVRPlaySpace()
     {
-        HandleCameraControls();
+        if(m_vrPlayArea == null)
+        {
+            return;
+        }
 
-        m_lastMousePos = Input.mousePosition;
+        m_vrPlayArea.transform.position += LevelManager.Instance.m_activeLevel.GetCenterWorldPosition() - m_vrEyesTransform.position;
     }
 
-    public void HandleCameraControls()
+    protected void HandleCameraControls()
     {
         if(Input.GetKeyDown(KeyCode.O))
         {
@@ -140,7 +183,7 @@ public class Game : MonoBehaviour
         }
     }
 
-    public void HandlePlayerControls()
+    protected void HandlePlayerControls()
     {
         if (Input.GetMouseButtonDown(0))
         {
@@ -148,132 +191,163 @@ public class Game : MonoBehaviour
             RaycastHit hit;
             if (Physics.Raycast(ray, out hit, float.MaxValue, LayerUtils.kDefaultCameraLayerMask))
             {
-                LevelCell cell = hit.collider.GetComponent<LevelCell>();
-                if(cell != null && cell.m_data.m_type == LevelCellType.Handle && Vector3.Dot(hit.normal, cell.transform.up) > 0.5f)
-                {
-                    Select(cell);
-                    
-                    m_rotationMouseStart = Input.mousePosition;
-
-                    m_rotationAxis = GetRotationAxis(m_selectedCell.transform.forward);
-                    if (m_rotationAxis == Vector3.up)
-                    {
-                        m_rotationGroup = m_selectedYLayer;
-                    }
-                    else if (m_rotationAxis == Vector3.right)
-                    {
-                        m_rotationGroup = m_selectedXLayer;
-                    }
-                    else
-                    {
-                        m_rotationGroup = m_selectedZLayer;
-                    }
-
-                    m_rotationGroup.SetColor(m_rotationHighlightColor);
-                    m_rotationStarted = false;
-                }
-                else
-                {
-                    Vector3 destPos = hit.point;
-                    switch(cell.m_data.m_type)
-                    {
-                        case LevelCellType.Goal:
-                        case LevelCellType.Ramp:
-                            destPos -= hit.normal * LevelManager.Instance.m_activeLevel.m_palette.m_spacingSize * 0.5f;
-                            break;
-                        default:
-                            destPos += hit.normal * LevelManager.Instance.m_activeLevel.m_palette.m_spacingSize * 0.5f;
-                            break;
-                    }
-                    m_player.PathTo(destPos);
-                }
+                StartInteraction(hit);
             }
+            m_rotationMouseStart = Input.mousePosition;
         }
         else if (Input.GetMouseButton(0))
         {
-            if (m_selectedCell != null)
-            {
-                if (!m_rotationStarted)
-                {
-                    Vector3 deltaMouse = Input.mousePosition - m_rotationMouseStart;
-                    if (deltaMouse.sqrMagnitude > 50)
-                    {
-                        m_rotater = new GameObject("Rotater");
-                        m_rotater.transform.SetParent(transform);
-                        m_rotater.transform.position = LevelManager.Instance.m_activeLevel.GetCenterWorldPosition();
-                        m_rotater.transform.rotation = Quaternion.identity;
-
-                        m_rotationGroup.SetParent(m_rotater.transform);
-
-                        if(m_player.m_isMoving)
-                        {
-                            m_player.Stop();
-                        }
-                        m_rotationStarted = true;
-                    }
-                }
-
-                if (m_rotationStarted)
-                {
-                    Ray lastRay = Camera.main.ScreenPointToRay(m_lastMousePos);
-                    Ray currRay = Camera.main.ScreenPointToRay(Input.mousePosition);
-
-                    Vector3 lastProjected = Vector3.ProjectOnPlane(lastRay.direction, m_rotationAxis);
-                    Vector3 currProjected = Vector3.ProjectOnPlane(currRay.direction, m_rotationAxis);
-
-                    Vector3 lastRight = Vector3.Cross(m_rotationAxis, lastProjected);
-
-                    Vector3 eulers = m_rotater.transform.eulerAngles;
-                    eulers += m_rotationAxis * Mathf.Sign(Vector3.Dot(lastRight, currProjected)) * Vector3.Angle(lastProjected, currProjected);
-                    m_rotater.transform.eulerAngles = eulers;
-                }
-            }
+            ContinueInteraction(Camera.main.ScreenPointToRay(Input.mousePosition));
         }
         else if (Input.GetMouseButtonUp(0))
         {
-            if (m_selectedCell != null)
-            {
-                Level.CellGroup rotatedCells = new Level.CellGroup();
-                rotatedCells.AddRange(m_rotationGroup);
-                if (m_rotationStarted)
-                {
-                    GameObject rotater = m_rotater;
-                    Quaternion startRotation = rotater.transform.rotation;
-                    Quaternion finalRotation = GetClosestValidRotation(startRotation);
-                    m_isAutoCompleting = true;
-
-                    LeanTween.value(rotater.gameObject, 0.0f, 1.0f, m_autoCompleteSpeed).setEase(m_autoCompleteEase).setOnUpdate((float t) =>
-                    {
-                        rotater.transform.rotation = Quaternion.Slerp(startRotation, finalRotation, t);
-                        rotatedCells.SetColor(Color.Lerp(m_rotationHighlightColor, Color.white, t));
-                    }).setOnComplete(() =>
-                    {
-                        rotatedCells.SetParent(LevelManager.Instance.transform);
-                        rotatedCells.ResetColor();
-                        LevelManager.Instance.m_activeLevel.UpdateCells(rotatedCells);
-                        Destroy(m_rotater);
-
-                        m_player.m_desiredPosition = m_player.transform.position;
-                        m_player.m_desiredRotation = m_player.transform.rotation;
-                        m_player.m_gravity = -m_player.transform.up;
-
-                        m_isAutoCompleting = false;
-                    });
-                }
-                else
-                {
-                    LeanTween.value(0.0f, 1.0f, m_autoCompleteSpeed).setEase(m_autoCompleteEase).setOnUpdate((float t) =>
-                    {
-                        rotatedCells.SetColor(Color.Lerp(m_rotationHighlightColor, Color.white, t));
-                    });
-                }
-                ClearSelection();
-            }
-            m_rotationStarted = false;
+            EndInteraction();
         }
     }
 
-    public Vector3 GetRotationAxis(Vector3 matchVector, Vector3 exclusionVector = default(Vector3))
+    public void StartInteraction(RaycastHit hit)
+    {
+        if(m_isAutoCompleting || LevelManager.Instance.m_isTransitioning)
+        {
+            return;
+        }
+
+        LevelCell cell = hit.collider.GetComponentInParent<LevelCell>();
+        if(cell == null)
+        {
+            return;
+        }
+
+        if (cell.m_data.m_type == LevelCellType.Handle && Vector3.Dot(hit.normal, cell.transform.up) > 0.5f)
+        {
+            Select(cell);
+            
+            m_rotationAxis = GetRotationAxis(m_selectedCell.transform.forward);
+            if (m_rotationAxis == Vector3.up)
+            {
+                m_rotationGroup = m_selectedYLayer;
+            }
+            else if (m_rotationAxis == Vector3.right)
+            {
+                m_rotationGroup = m_selectedXLayer;
+            }
+            else
+            {
+                m_rotationGroup = m_selectedZLayer;
+            }
+
+            m_rotationGroup.SetColor(m_rotationHighlightColor);
+
+            m_rotater = new GameObject("Rotater");
+            m_rotater.transform.SetParent(transform);
+            m_rotater.transform.position = LevelManager.Instance.m_activeLevel.GetCenterWorldPosition();
+            m_rotater.transform.rotation = Quaternion.identity;
+
+            m_interactionDistance = hit.distance;
+            
+            Vector3 center = Vector3.ProjectOnPlane(LevelManager.Instance.m_activeLevel.GetCenterWorldPosition(), m_rotationAxis);
+            m_rotationStartDirProjected = Vector3.ProjectOnPlane(hit.point, m_rotationAxis) - center;
+            m_rotationStartDirProjected.Normalize();
+
+            m_rotationGroup.SetParent(m_rotater.transform);
+
+            if (m_player.m_isMoving)
+            {
+                m_player.Stop();
+            }
+        }
+        else
+        {
+            Vector3 destPos = hit.point;
+            switch (cell.m_data.m_type)
+            {
+                case LevelCellType.Goal:
+                case LevelCellType.Ramp:
+                    destPos = cell.transform.position;
+                    break;
+                default:
+                    destPos += hit.normal * LevelManager.Instance.m_activeLevel.m_palette.m_spacingSize * 0.5f;
+                    break;
+            }
+            m_player.PathTo(destPos);
+        }
+    }
+
+    public void ContinueInteraction(Ray ray)
+    {
+        if (m_selectedCell != null)
+        {
+            Vector3 center = Vector3.ProjectOnPlane(LevelManager.Instance.m_activeLevel.GetCenterWorldPosition(), m_rotationAxis);
+            float dist = Mathf.Max(Vector3.Distance(ray.origin, m_selectedCell.transform.position) - m_selectedCell.transform.localScale.x * 0.5f, m_interactionDistance);
+            Vector3 currProjected = Vector3.ProjectOnPlane(ray.GetPoint(dist), m_rotationAxis);
+            currProjected -= center;
+            currProjected.Normalize();
+            m_rotater.transform.rotation = Quaternion.FromToRotation(m_rotationStartDirProjected, currProjected);
+        }
+    }
+
+    public void ContinueInteraction(Ray lastRay, Ray currRay)
+    {
+        if (m_selectedCell != null)
+        {
+            RaycastHit lastHit, currHit;
+            if(Physics.Raycast(lastRay, out lastHit, Mathf.Infinity, LayerUtils.kDefaultCameraLayerMask) && Physics.Raycast(currRay, out currHit, Mathf.Infinity, LayerUtils.kDefaultCameraLayerMask))
+            {
+                Vector3 center = Vector3.ProjectOnPlane(LevelManager.Instance.m_activeLevel.GetCenterWorldPosition(), m_rotationAxis);
+                
+                Vector3 lastProjected = Vector3.ProjectOnPlane(lastHit.point, m_rotationAxis) - center;
+                Vector3 currProjected = Vector3.ProjectOnPlane(currHit.point, m_rotationAxis) - center;
+                lastProjected.Normalize();
+                currProjected.Normalize();
+
+                Vector3 lastRight = Vector3.Cross(m_rotationAxis, lastProjected);
+
+                Vector3 eulers = m_rotater.transform.eulerAngles;
+                eulers += m_rotationAxis * Mathf.Sign(Vector3.Dot(lastRight, currProjected)) * Vector3.Angle(lastProjected, currProjected);
+                m_rotater.transform.eulerAngles = eulers;
+            }
+        }
+    }
+
+    public void EndInteraction()
+    {
+        if (m_selectedCell != null)
+        {
+            Level.CellGroup rotatedCells = new Level.CellGroup();
+            rotatedCells.AddRange(m_rotationGroup);
+            GameObject rotater = m_rotater;
+            Quaternion startRotation = rotater.transform.rotation;
+            Quaternion finalRotation = Quaternion.identity;
+            if (Quaternion.Angle(startRotation, Quaternion.identity) > kTransitionThreshold)
+            {
+                finalRotation = GetClosestValidRotation(startRotation);
+            }
+
+            m_isAutoCompleting = true;
+
+            LeanTween.value(rotater.gameObject, 0.0f, 1.0f, m_autoCompleteSpeed).setEase(m_autoCompleteEase).setOnUpdate((float t) =>
+            {
+                rotater.transform.rotation = Quaternion.Slerp(startRotation, finalRotation, t);
+                rotatedCells.SetColor(Color.Lerp(m_rotationHighlightColor, Color.white, t));
+            }).setOnComplete(() =>
+            {
+                rotatedCells.SetParent(LevelManager.Instance.transform);
+                rotatedCells.ResetColor();
+                LevelManager.Instance.m_activeLevel.UpdateCells(rotatedCells);
+                Destroy(m_rotater);
+
+                m_player.m_desiredPosition = m_player.transform.position;
+                m_player.m_desiredRotation = m_player.transform.rotation;
+                m_player.m_gravity = -m_player.transform.up;
+
+                m_isAutoCompleting = false;
+            });
+            
+            ClearSelection();
+        }
+    }
+
+    protected Vector3 GetRotationAxis(Vector3 matchVector, Vector3 exclusionVector = default(Vector3))
     {
         float bestDot = -1;
         Vector3 bestAxis = Vector3.zero;
@@ -294,7 +368,7 @@ public class Game : MonoBehaviour
         return bestAxis;
     }
 
-    public Quaternion GetClosestValidRotation(Quaternion rotation)
+    protected Quaternion GetClosestValidRotation(Quaternion rotation)
     {
         float bestAngle = float.MaxValue;
         Quaternion bestRotation = Quaternion.identity;
@@ -312,7 +386,7 @@ public class Game : MonoBehaviour
         return bestRotation;
     }
 
-    public void ClearSelection()
+    protected void ClearSelection()
     {
         /*
         m_selectedXLayer.ResetColor();
@@ -332,7 +406,7 @@ public class Game : MonoBehaviour
         m_selectedCell = null;
     }
 
-    public void Select(LevelCell cell)
+    protected void Select(LevelCell cell)
     {
         ClearSelection();
 

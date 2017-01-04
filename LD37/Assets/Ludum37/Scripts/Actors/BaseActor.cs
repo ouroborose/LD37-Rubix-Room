@@ -67,12 +67,12 @@ public class BaseActor : MonoBehaviour {
                     {
                         m_actualMoveTime *= 1.5f;
                     }
-                    m_desiredPosition += up * 0.5f;
+                    m_desiredPosition += up * LevelManager.Instance.m_activeLevel.m_palette.m_spacingSize * 0.5f;
                     SetGroundCell(cell);
                 }
                 else
                 {
-                    SetGroundCell(GetCell(m_desiredPosition + m_gravity));
+                    SetGroundCell(GetCell(m_desiredPosition + m_gravity * GetCellSpacing()));
                 }
 
                 Vector3 lookDir = (m_desiredPosition - m_startPosition).normalized;
@@ -95,8 +95,6 @@ public class BaseActor : MonoBehaviour {
             float t = 1.0f - (m_moveTimer / m_actualMoveTime);
             transform.position = Vector3.Lerp(m_startPosition, m_desiredPosition, t);
             transform.rotation = Quaternion.Slerp(transform.rotation, m_desiredRotation, t);
-
-            
         }
     }
 
@@ -115,7 +113,7 @@ public class BaseActor : MonoBehaviour {
 
     public void DiscoverGroundCell()
     {
-        SetGroundCell(GetCell(transform.position + m_gravity));
+        SetGroundCell(GetCell(transform.position + m_gravity * GetCellSpacing()));
     }
 
     public void SetGroundCell(LevelCell cell)
@@ -124,11 +122,23 @@ public class BaseActor : MonoBehaviour {
         if (m_groundCell != null)
         {
             transform.parent = m_groundCell.transform;
+            transform.localScale = Vector3.one;
         }
         else
         {
             transform.parent = null;
+            transform.localScale = Vector3.one * GetCellScale();
         }
+    }
+
+    public float GetCellScale()
+    {
+        return LevelManager.Instance.m_activeLevel.m_palette.m_scaleSize;
+    }
+
+    public float GetCellSpacing()
+    {
+        return LevelManager.Instance.m_activeLevel.m_palette.m_spacingSize;
     }
 
     public LevelCell GetCell(Vector3 worldPos)
@@ -341,7 +351,8 @@ public class BaseActor : MonoBehaviour {
 
     protected void AddPossibleMove(List<int> possibleMoves, Vector3 worldPos, Vector3 dir, Vector3 gravityDir, HashSet<int> visited, Dictionary<int, Vector3> gravities)
     {
-        Vector3 checkPos = worldPos + dir;
+        float spacing = GetCellSpacing();
+        Vector3 checkPos = worldPos + dir * spacing;
         int index = GetCellIndex(checkPos);
         if (visited.Contains(index))
         {
@@ -368,7 +379,7 @@ public class BaseActor : MonoBehaviour {
             }
         }
 
-        LevelCell below = GetCell(checkPos + gravityDir);
+        LevelCell below = GetCell(checkPos + gravityDir * spacing);
         if (below != null)
         {
             switch(below.m_data.m_type)

@@ -11,10 +11,13 @@ public class LevelManager : MonoBehaviour {
 
     public int m_currentLevelIndex = 0;
     public Level m_activeLevel;
+    public bool m_isTransitioning { get; private set; }
 
     protected void Awake()
     {
         s_instance = this;
+
+        m_isTransitioning = false;
 
         for (int i = 0, n = m_levelPalettes.Length; i < n; ++i)
         {
@@ -24,11 +27,7 @@ public class LevelManager : MonoBehaviour {
         // create first level
         if (m_currentLevelIndex < m_levelDatas.Length)
         {
-            m_activeLevel = new Level();
-            LevelData data = m_levelDatas[m_currentLevelIndex].m_data;
-            m_activeLevel.Init(data, m_levelPalettes[data.m_paletteIndex]);
-            m_activeLevel.GenerateMissingCells();
-            MovePlayerToStart();
+            TransitionTo(m_levelDatas[m_currentLevelIndex].m_data);
         }
     }
 
@@ -63,7 +62,7 @@ public class LevelManager : MonoBehaviour {
             {
                 player.transform.position = playerStart.transform.position;
                 player.transform.rotation = playerStart.transform.rotation;
-
+                
                 player.m_desiredPosition = player.transform.position;
                 player.m_desiredRotation = player.transform.rotation;
                 player.m_gravity = -player.transform.up;
@@ -104,41 +103,47 @@ public class LevelManager : MonoBehaviour {
 
     protected IEnumerator DoTransition(LevelData data)
     {
+        m_isTransitioning = true;
         Game.Instance.m_player.Stop();
         Game.Instance.m_player.transform.parent = null;
 
         Level newLevel = new Level();
         newLevel.Init(data, m_levelPalettes[data.m_paletteIndex]);
 
-        foreach (var pair in m_activeLevel.m_levelCells)
+        if(m_activeLevel != null)
         {
-            LevelCell cell = pair.Value;
-            if (cell == null)
+            foreach (var pair in m_activeLevel.m_levelCells)
             {
-                continue;
-            }
-            
-            if (data.IsInBounds(cell.m_data.m_x, cell.m_data.m_y, cell.m_data.m_z))
-            {
-                LevelCellData newCellData = data.GetCellData(cell.m_data.m_x, cell.m_data.m_y, cell.m_data.m_z);
-                if (cell.m_data.m_type != newCellData.m_type)
+                LevelCell cell = pair.Value;
+                if (cell == null)
                 {
-                    cell.Remove(LevelCell.kTransitionTime * 0.5f * (m_activeLevel.m_data.m_height - cell.m_data.m_y));
+                    continue;
+                }
+
+                if (data.IsInBounds(cell.m_data.m_x, cell.m_data.m_y, cell.m_data.m_z))
+                {
+                    LevelCellData newCellData = data.GetCellData(cell.m_data.m_x, cell.m_data.m_y, cell.m_data.m_z);
+                    if (cell.m_data.m_type != newCellData.m_type)
+                    {
+                        cell.Remove(LevelCell.kTransitionTime * 0.5f * (m_activeLevel.m_data.m_height - cell.m_data.m_y));
+                    }
+                    else
+                    {
+                        newLevel.AddCell(cell);
+                    }
                 }
                 else
                 {
-                    newLevel.AddCell(cell);
+                    cell.Remove(LevelCell.kTransitionTime * 0.5f * (m_activeLevel.m_data.m_height - cell.m_data.m_y));
                 }
-            }
-            else
-            {
-                cell.Remove(LevelCell.kTransitionTime * 0.5f * (m_activeLevel.m_data.m_height - cell.m_data.m_y));
             }
         }
         
         m_activeLevel = newLevel;
-        m_activeLevel.GenerateMissingCells();
-        MovePlayerToStart();
+        float delayTime = m_activeLevel.GenerateMissingCells();
+        yield return new WaitForSeconds(delayTime + LevelCell.kTransitionTime + 0.5f);
         yield return new WaitForEndOfFrame();
+        MovePlayerToStart();
+        m_isTransitioning = false;
     }
 }

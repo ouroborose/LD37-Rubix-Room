@@ -7,7 +7,7 @@ public class Player : BaseActor {
     public Color m_pathFindingProcessingColor;
     public Color m_pathFindingSuccessColor;
     public Color m_pathFindingFailColor;
-    
+
     public override void Stop()
     {
         base.Stop();

@@ -12,6 +12,8 @@ public class LevelEditor : MonoBehaviour {
     public static LevelEditor Instance { get { return s_instance; } }
 
     public Transform m_previewer;
+    public VRController m_paletteController;
+    public VRController m_interactionController;
 
     protected LevelCellType m_currentType = LevelCellType.Solid;
 
@@ -77,71 +79,86 @@ public class LevelEditor : MonoBehaviour {
                 return;
             }
         }
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        RaycastHit hit;
-        if (Physics.Raycast(ray, out hit))
-        {
-            Vector3 pos = hit.point;
-            if (m_currentType == LevelCellType.Empty || Input.GetKey(KeyCode.LeftShift))
-            {
-                pos -= hit.normal * LevelManager.Instance.m_activeLevel.m_palette.m_spacingSize * 0.5f;
-            }
-            else
-            {
-                pos += hit.normal * LevelManager.Instance.m_activeLevel.m_palette.m_spacingSize * 0.5f;
-            }
-            m_previewer.position = LevelManager.Instance.m_activeLevel.GetCellWorldPosition(pos);
 
-            if (Input.GetMouseButtonDown(0))
+        m_previewer.localScale = Vector3.one * LevelManager.Instance.m_activeLevel.m_palette.m_scaleSize;
+
+        if (Game.Instance.m_isVR)
+        {
+            PositionPreviewer(m_interactionController.TargetingHit);
+        }
+        else
+        {
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hit;
+            if (Physics.Raycast(ray, out hit))
             {
-                if(m_currentType == LevelCellType.Empty)
+                PositionPreviewer(hit);
+
+                if (Input.GetMouseButtonDown(0))
+                {
+                    if (m_currentType == LevelCellType.Empty)
+                    {
+                        // delete cell
+                        LevelCell cell = hit.collider.GetComponent<LevelCell>();
+                        ExecuteCommand(new DeleteCommand(cell.m_data));
+                    }
+                    else if (Input.GetKey(KeyCode.LeftShift))
+                    {
+                        // rotate
+                        LevelCell cell = hit.collider.GetComponent<LevelCell>();
+                        if (cell.m_data.m_type != LevelCellType.Solid)
+                        {
+                            ExecuteCommand(new RotateCommand(cell.m_data));
+                        }
+                    }
+                    else
+                    {
+                        // add cell
+                        int rotationId = (int)RotationUtil.GetClosestId(Quaternion.LookRotation(Vector3.Cross(Camera.main.transform.forward, hit.normal), hit.normal));
+                        rotationId /= 4;
+                        rotationId *= 4;
+                        ExecuteCommand(new CreateCommand(m_previewer.position, m_currentType, (RotationId)rotationId));
+                    }
+                }
+                /*
+                else if(Input.GetMouseButtonDown(1))
+                {
+                    Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                    RaycastHit hit;
+                    if (Physics.Raycast(ray, out hit))
+                    {
+                        // rotate
+                        LevelCell cell = hit.collider.GetComponent<LevelCell>();
+                        if (cell.m_data.m_type != LevelCellType.Solid)
+                        {
+                            ExecuteCommand(new RotateCommand(cell.m_data));
+                        }
+                    }
+                }
+                */
+                else if (Input.GetMouseButtonDown(2))
                 {
                     // delete cell
                     LevelCell cell = hit.collider.GetComponent<LevelCell>();
                     ExecuteCommand(new DeleteCommand(cell.m_data));
                 }
-                else if(Input.GetKey(KeyCode.LeftShift))
-                {
-                    // rotate
-                    LevelCell cell = hit.collider.GetComponent<LevelCell>();
-                    if(cell.m_data.m_type != LevelCellType.Solid)
-                    {
-                        ExecuteCommand(new RotateCommand(cell.m_data));
-                    }
-                }
-                else
-                {
-                    // add cell
-                    int rotationId = (int)RotationUtil.GetClosestId(Quaternion.LookRotation(Vector3.Cross(Camera.main.transform.forward, hit.normal), hit.normal));
-                    rotationId /= 4;
-                    rotationId *= 4;
-                    ExecuteCommand(new CreateCommand(pos, m_currentType, (RotationId)rotationId));
-                }
-            }
-            /*
-            else if(Input.GetMouseButtonDown(1))
-            {
-                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-                RaycastHit hit;
-                if (Physics.Raycast(ray, out hit))
-                {
-                    // rotate
-                    LevelCell cell = hit.collider.GetComponent<LevelCell>();
-                    if (cell.m_data.m_type != LevelCellType.Solid)
-                    {
-                        ExecuteCommand(new RotateCommand(cell.m_data));
-                    }
-                }
-            }
-            */
-            else if(Input.GetMouseButtonDown(2))
-            {
-                // delete cell
-                LevelCell cell = hit.collider.GetComponent<LevelCell>();
-                ExecuteCommand(new DeleteCommand(cell.m_data));
-            }
 
+            }
         }
+    }
+
+    protected void PositionPreviewer(RaycastHit hit)
+    {
+        Vector3 pos = hit.point;
+        if (m_currentType == LevelCellType.Empty || Input.GetKey(KeyCode.LeftShift))
+        {
+            pos -= hit.normal * LevelManager.Instance.m_activeLevel.m_palette.m_spacingSize * 0.5f;
+        }
+        else
+        {
+            pos += hit.normal * LevelManager.Instance.m_activeLevel.m_palette.m_spacingSize * 0.5f;
+        }
+        m_previewer.position = LevelManager.Instance.m_activeLevel.GetCellWorldPosition(pos);
     }
 
     public void ExecuteCommand(BaseCommand command)
