@@ -98,6 +98,16 @@ public class BaseActor : MonoBehaviour {
         }
     }
 
+    public virtual void TeleportTo(Vector3 position, Quaternion rotation)
+    {
+        transform.position = position;
+        transform.rotation = rotation;
+
+        m_desiredPosition = position;
+        m_desiredRotation = rotation;
+        m_gravity = -transform.up;
+    }
+
     public virtual void OnPathDestinationReached()
     {
 
@@ -259,7 +269,7 @@ public class BaseActor : MonoBehaviour {
                     m_path.Push(currIndex);
                     //Debug.DrawLine(GetCellWorldPosition(currIndex), GetCellWorldPosition(cameFrom[currIndex]), Color.green, 2.0f);
                     currIndex = cameFrom[currIndex];
-                    yield return new WaitForEndOfFrame();
+                    //yield return new WaitForEndOfFrame();
                 }
                 m_pathReady = true;
                 OnPathFindingSuccess();
@@ -289,7 +299,7 @@ public class BaseActor : MonoBehaviour {
                 fScores[moveIndex] = moveGScore + Vector3.SqrMagnitude(destWorldPos - GetCellWorldPosition(moveIndex));
             }
 
-            yield return new WaitForEndOfFrame();
+            //yield return new WaitForEndOfFrame();
         }
 
         OnPathFindingFailed();
@@ -365,6 +375,7 @@ public class BaseActor : MonoBehaviour {
             switch (cell.m_data.m_type)
             {
                 case LevelCellType.Solid:
+                case LevelCellType.SolidColored:
                 case LevelCellType.Handle:
                     return;
                 case LevelCellType.Ramp:
@@ -385,6 +396,7 @@ public class BaseActor : MonoBehaviour {
             switch(below.m_data.m_type)
             {
                 case LevelCellType.Solid:
+                case LevelCellType.SolidColored:
                 case LevelCellType.Handle:
                     gravities[index] = gravityDir;
                     possibleMoves.Add(index);

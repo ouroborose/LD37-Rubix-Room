@@ -12,6 +12,8 @@ public class LevelCell : MonoBehaviour {
     [HideInInspector]
     public bool m_isMarkedForDeletion = false;
 
+    protected MaterialPropertyBlock[] m_materialPropertyBlocks;
+
     protected Vector3 m_originalScale;
     protected Renderer[] m_renderers;
     protected Color[] m_originalColors;
@@ -19,11 +21,14 @@ public class LevelCell : MonoBehaviour {
     protected void Awake()
     {
         m_renderers = GetComponentsInChildren<Renderer>();
+        
         m_originalColors = new Color[m_renderers.Length];
+        m_materialPropertyBlocks = new MaterialPropertyBlock[m_renderers.Length];
 
-        for(int i = 0, n = m_renderers.Length; i < n; ++i)
+        for (int i = 0, n = m_renderers.Length; i < n; ++i)
         {
-            m_originalColors[i] = m_renderers[i].material.color;
+            m_materialPropertyBlocks[i] = new MaterialPropertyBlock();
+            m_originalColors[i] = m_renderers[i].sharedMaterial.color;
         }
     }
 
@@ -31,12 +36,22 @@ public class LevelCell : MonoBehaviour {
     {
         LeanTween.cancel(gameObject, false);
     }
+    
+    public void LerpColorToOriginal(Color color, float t)
+    {
+        for (int i = 0, n = m_renderers.Length; i < n; ++i)
+        {
+            m_materialPropertyBlocks[i].SetColor("_Color", Color.Lerp(color, m_originalColors[i],t));
+            m_renderers[i].SetPropertyBlock(m_materialPropertyBlocks[i]);
+        }
+    }
 
     public void SetColor(Color color)
     {
         for (int i = 0, n = m_renderers.Length; i < n; ++i)
         {
-            m_renderers[i].material.color = color;
+            m_materialPropertyBlocks[i].SetColor("_Color", color);
+            m_renderers[i].SetPropertyBlock(m_materialPropertyBlocks[i]);
         }
     }
 
@@ -44,7 +59,8 @@ public class LevelCell : MonoBehaviour {
     {
         for (int i = 0, n = m_renderers.Length; i < n; ++i)
         {
-            m_renderers[i].material.color = m_originalColors[i];
+            m_materialPropertyBlocks[i].SetColor("_Color", m_originalColors[i]);
+            m_renderers[i].SetPropertyBlock(m_materialPropertyBlocks[i]);
         }
     }
 

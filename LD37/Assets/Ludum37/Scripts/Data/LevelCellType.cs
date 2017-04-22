@@ -6,5 +6,7 @@
     PlayerStart,
     Goal,
     Handle,
+    SolidColored,
+    LosePoint,
     NumTypes
 }

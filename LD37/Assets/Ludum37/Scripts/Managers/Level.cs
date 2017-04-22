@@ -12,6 +12,14 @@ public class Level {
 
     public class CellGroup : List<LevelCell>
     {
+        public void LerpColorToOriginal(Color c, float t)
+        {
+            for (int i = 0, n = Count; i < n; ++i)
+            {
+                this[i].LerpColorToOriginal(c, t);
+            }
+        }
+
         public void SetColor(Color c)
         {
             for (int i = 0, n = Count; i < n; ++i)
@@ -62,16 +70,21 @@ public class Level {
     public float GenerateMissingCells()
     {
         float longestDelayTime = 0.0f;
-        for(int i = 0, n = m_data.m_occupiedCells.Count; i < n; ++i)
+        m_data.m_occupiedCells.Sort((a,b)=> a.m_y-b.m_y); // sort by y position
+        for (int i = 0, n = m_data.m_occupiedCells.Count; i < n; ++i)
         {
             LevelCellData cellData = m_data.m_occupiedCells[i];
             LevelCell existingCell = GetCell(cellData.m_x, cellData.m_y, cellData.m_z);
             if (existingCell != null)
             {
+                if(!existingCell.gameObject.activeSelf)
+                {
+                    existingCell.Show(LevelManager.GetTransitionDelay(cellData.m_y));
+                }
                 continue;
             }
 
-            float delayTime = LevelCell.kTransitionTime * 0.5f * cellData.m_y;
+            float delayTime = LevelManager.GetTransitionDelay(cellData.m_y); //LevelCell.kTransitionTime * 0.5f * (m_data.m_height - cellData.m_y);
             if(delayTime > longestDelayTime)
             {
                 longestDelayTime = delayTime;

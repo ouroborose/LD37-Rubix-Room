@@ -20,6 +20,8 @@ public class Indicator : MonoBehaviour {
     protected Color m_fromColor;
     protected Color m_toColor;
 
+    protected bool m_initialized = false;
+
     protected void Awake()
     {
         m_renderers = GetComponentsInChildren<Renderer>();
@@ -30,8 +32,24 @@ public class Indicator : MonoBehaviour {
             m_originalColors[i] = m_renderers[i].material.color;
         }
         m_toColor = m_originalColors[0];
-        m_originalScale = transform.localScale;
         gameObject.SetActive(false);
+    }
+
+    protected void Init()
+    {
+        if (m_initialized)
+        {
+            return;
+        }
+
+        m_originalScale = Vector3.one * LevelManager.Instance.m_activeLevel.m_palette.m_scaleSize;
+        transform.localScale = m_originalScale;
+        m_initialized = true;
+    }
+
+    protected void Start()
+    {
+        Init();
     }
 
     public void SetColor(Color color)
@@ -65,6 +83,7 @@ public class Indicator : MonoBehaviour {
 
     public void Show(float delay = 0.0f)
     {
+        Init();
         LeanTween.cancel(gameObject);
         gameObject.SetActive(true);
         ResetColor();

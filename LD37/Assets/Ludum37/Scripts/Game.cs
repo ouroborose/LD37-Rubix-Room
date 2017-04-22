@@ -28,7 +28,7 @@ public class Game : MonoBehaviour
         Vector3.forward,
     };
 
-    public const float kTransitionThreshold = 25.0f;
+    public float kTransitionThreshold = 25.0f;
 
     public Player m_player;
     public Color m_rotationHighlightColor = Color.green;
@@ -41,7 +41,7 @@ public class Game : MonoBehaviour
 
     public float m_xCameraLookSensitivity = 10.0f;
     public float m_yCameraLookSensitivity = 10.0f;
-
+    
     public float m_autoCompleteSpeed = 0.25f;
     public LeanTweenType m_autoCompleteEase = LeanTweenType.easeOutSine;
     
@@ -71,6 +71,11 @@ public class Game : MonoBehaviour
     protected void Awake()
     {
         s_instance = this;
+
+        m_player.TeleportTo(new Vector3(0, -100, 0), Quaternion.identity);
+
+        UnityEngine.VR.VRSettings.enabled = m_isVR;
+        Camera.main.ResetFieldOfView();
     }
 
     protected void Start()
@@ -164,7 +169,7 @@ public class Game : MonoBehaviour
         {
             moveDir.y -= 1;
         }
-
+        moveDir *= LevelManager.Instance.m_activeLevel.m_palette.m_scaleSize;
         Vector3 newPos = Camera.main.transform.position + moveDir * m_cameraMoveSpeed * Time.deltaTime;
         Bounds bounds = LevelManager.Instance.m_activeLevel.m_worldBounds;
         newPos.x = Mathf.Clamp(newPos.x, bounds.min.x, bounds.max.x);
@@ -262,6 +267,7 @@ public class Game : MonoBehaviour
             switch (cell.m_data.m_type)
             {
                 case LevelCellType.Goal:
+                case LevelCellType.LosePoint:
                 case LevelCellType.Ramp:
                     destPos = cell.transform.position;
                     break;
@@ -328,7 +334,7 @@ public class Game : MonoBehaviour
             LeanTween.value(rotater.gameObject, 0.0f, 1.0f, m_autoCompleteSpeed).setEase(m_autoCompleteEase).setOnUpdate((float t) =>
             {
                 rotater.transform.rotation = Quaternion.Slerp(startRotation, finalRotation, t);
-                rotatedCells.SetColor(Color.Lerp(m_rotationHighlightColor, Color.white, t));
+                rotatedCells.LerpColorToOriginal(m_rotationHighlightColor, t);
             }).setOnComplete(() =>
             {
                 rotatedCells.SetParent(LevelManager.Instance.transform);

@@ -99,13 +99,13 @@ public class LevelEditor : MonoBehaviour {
                     if (m_currentType == LevelCellType.Empty)
                     {
                         // delete cell
-                        LevelCell cell = hit.collider.GetComponent<LevelCell>();
+                        LevelCell cell = hit.collider.GetComponentInParent<LevelCell>();
                         ExecuteCommand(new DeleteCommand(cell.m_data));
                     }
                     else if (Input.GetKey(KeyCode.LeftShift))
                     {
                         // rotate
-                        LevelCell cell = hit.collider.GetComponent<LevelCell>();
+                        LevelCell cell = hit.collider.GetComponentInParent<LevelCell>();
                         if (cell.m_data.m_type != LevelCellType.Solid)
                         {
                             ExecuteCommand(new RotateCommand(cell.m_data));
@@ -120,26 +120,10 @@ public class LevelEditor : MonoBehaviour {
                         ExecuteCommand(new CreateCommand(m_previewer.position, m_currentType, (RotationId)rotationId));
                     }
                 }
-                /*
-                else if(Input.GetMouseButtonDown(1))
-                {
-                    Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-                    RaycastHit hit;
-                    if (Physics.Raycast(ray, out hit))
-                    {
-                        // rotate
-                        LevelCell cell = hit.collider.GetComponent<LevelCell>();
-                        if (cell.m_data.m_type != LevelCellType.Solid)
-                        {
-                            ExecuteCommand(new RotateCommand(cell.m_data));
-                        }
-                    }
-                }
-                */
                 else if (Input.GetMouseButtonDown(2))
                 {
                     // delete cell
-                    LevelCell cell = hit.collider.GetComponent<LevelCell>();
+                    LevelCell cell = hit.collider.GetComponentInParent<LevelCell>();
                     ExecuteCommand(new DeleteCommand(cell.m_data));
                 }
 

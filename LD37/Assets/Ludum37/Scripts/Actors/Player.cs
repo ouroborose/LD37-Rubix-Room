@@ -27,13 +27,30 @@ public class Player : BaseActor {
         }
 
         LevelCell cell = GetCell(m_desiredPosition);
-        if (cell != null && cell.m_data.m_type == LevelCellType.Goal)
+        if (cell != null)
         {
-            cell.Hide(m_moveTimer * 0.25f);
-            LeanTween.delayedCall(m_moveTimer + 0.1f, () =>
+            switch(cell.m_data.m_type)
             {
-                LevelManager.Instance.TransitionToNextLevel();
-            });
+                case LevelCellType.Goal:
+                    {
+                        cell.Hide(m_moveTimer * 0.25f);
+                        LeanTween.delayedCall(m_moveTimer + 0.1f, () =>
+                        {
+                            LevelManager.Instance.TransitionToNextLevel();
+                        });
+                    }
+                    break;
+                case LevelCellType.LosePoint:
+                    {
+                        cell.Hide(m_moveTimer * 0.25f);
+                        LeanTween.delayedCall(m_moveTimer + 0.1f, () =>
+                        {
+                            LevelManager.Instance.ResetCurrentLevel();
+                        });
+                    }
+                    break;
+            }
+            
         }
     }
 

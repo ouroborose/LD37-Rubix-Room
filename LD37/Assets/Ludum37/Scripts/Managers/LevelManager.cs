@@ -60,13 +60,7 @@ public class LevelManager : MonoBehaviour {
             Player player = FindObjectOfType<Player>();
             if (player != null)
             {
-                player.transform.position = playerStart.transform.position;
-                player.transform.rotation = playerStart.transform.rotation;
-                
-                player.m_desiredPosition = player.transform.position;
-                player.m_desiredRotation = player.transform.rotation;
-                player.m_gravity = -player.transform.up;
-
+                player.TeleportTo(playerStart.transform.position, playerStart.transform.rotation);
                 player.DiscoverGroundCell();
             }
         }
@@ -104,6 +98,7 @@ public class LevelManager : MonoBehaviour {
     protected IEnumerator DoTransition(LevelData data)
     {
         m_isTransitioning = true;
+        s_transitionDelays.Clear();
         Game.Instance.m_player.Stop();
         Game.Instance.m_player.transform.parent = null;
 
@@ -123,9 +118,10 @@ public class LevelManager : MonoBehaviour {
                 if (data.IsInBounds(cell.m_data.m_x, cell.m_data.m_y, cell.m_data.m_z))
                 {
                     LevelCellData newCellData = data.GetCellData(cell.m_data.m_x, cell.m_data.m_y, cell.m_data.m_z);
+                    
                     if (cell.m_data.m_type != newCellData.m_type)
                     {
-                        cell.Remove(LevelCell.kTransitionTime * 0.5f * (m_activeLevel.m_data.m_height - cell.m_data.m_y));
+                        cell.Remove(GetTransitionDelay(cell.m_data.m_y));// LevelCell.kTransitionTime * 0.5f * (m_activeLevel.m_data.m_height - cell.m_data.m_y));
                     }
                     else
                     {
@@ -134,7 +130,7 @@ public class LevelManager : MonoBehaviour {
                 }
                 else
                 {
-                    cell.Remove(LevelCell.kTransitionTime * 0.5f * (m_activeLevel.m_data.m_height - cell.m_data.m_y));
+                    cell.Remove(GetTransitionDelay(cell.m_data.m_y)); //LevelCell.kTransitionTime * 0.5f * (m_activeLevel.m_data.m_height - cell.m_data.m_y));
                 }
             }
         }
@@ -145,5 +141,17 @@ public class LevelManager : MonoBehaviour {
         yield return new WaitForEndOfFrame();
         MovePlayerToStart();
         m_isTransitioning = false;
+    }
+
+    protected static Dictionary<int, float> s_transitionDelays = new Dictionary<int, float>();
+    public static float GetTransitionDelay(int y)
+    {
+        float delay;
+        if(!s_transitionDelays.TryGetValue(y, out delay))
+        {
+            delay = s_transitionDelays.Count * LevelCell.kTransitionTime * 0.5f;
+            s_transitionDelays.Add(y, delay);
+        }
+        return delay;
     }
 }
